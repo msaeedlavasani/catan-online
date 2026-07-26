@@ -1,7 +1,7 @@
-// In-memory room storage for now (Sprint 0 plumbing only).
-// Sprint 1 will replace the "players/lobby" skeleton below with the full
-// game-state model (board, resources, dev cards, etc.) ported from the
-// standalone artifact prototype.
+import { createLobbyState, newPlayer } from "./game/core.js";
+
+// In-memory room storage. Fine for Sprint 1 (single server process);
+// Sprint 3+ will move persistence to the database for reconnect/history.
 
 const rooms = new Map();
 
@@ -12,42 +12,49 @@ function newRoomId() {
   return s;
 }
 
-function newPlayerId() {
+function cryptoId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
 export function createRoom(playerName) {
-  const id = newRoomId();
-  const player = { id: newPlayerId(), name: playerName || "Player" };
-  const room = {
-    id,
-    phase: "lobby",
-    players: [player],
-    createdAt: Date.now(),
-  };
-  rooms.set(id, room);
-  return { room, player };
+  const player = newPlayer(playerName || "Player", cryptoId());
+  const game = createLobbyState(newRoomId(), player);
+  rooms.set(game.gameId, game);
+  return { room: game, player };
 }
 
 export function joinRoom(roomId, playerName) {
-  const room = rooms.get(roomId);
-  if (!room) return null;
-  if (room.phase !== "lobby") return null;
-  if (room.players.length >= 6) return null;
-  const player = { id: newPlayerId(), name: playerName || "Player" };
-  room.players.push(player);
-  return { room, player };
+  const game = rooms.get(roomId);
+  if (!game) return null;
+  if (game.phase !== "lobby") return null;
+  if (game.players.length >= 6) return null;
+  const player = newPlayer(playerName || "Player", cryptoId());
+  game.players.push(player);
+  game.log.push(`${player.name} joined the game.`);
+  return { room: game, player };
 }
 
-export function leaveRoom(roomId, playerId) {
-  const room = rooms.get(roomId);
-  if (!room) return null;
-  room.players = room.players.filter((p) => p.id !== playerId);
-  if (room.players.length === 0) {
-    rooms.delete(roomId);
-    return null;
+export function markDisconnected(roomId, playerId) {
+  const game = rooms.get(roomId);
+  if (!game) return null;
+  const player = game.players.find((p) => p.id === playerId);
+  if (player) player.connected = false;
+  if (game.phase === "lobby") {
+    game.players = game.players.filter((p) => p.id !== playerId);
+    if (game.players.length === 0) {
+      rooms.delete(roomId);
+      return null;
+    }
   }
-  return room;
+  return game;
+}
+
+export function markReconnected(roomId, playerId) {
+  const game = rooms.get(roomId);
+  if (!game) return null;
+  const player = game.players.find((p) => p.id === playerId);
+  if (player) player.connected = true;
+  return game;
 }
 
 export function getRoom(roomId) {
