@@ -29,4 +29,14 @@ export function playerPortRate(board, player, resource) {
   return rate;
 }
 
+// Darkens (negative amt) or lightens (positive amt) a "#rrggbb" color by amt in [-1, 1].
+export function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const adjust = (c) => Math.max(0, Math.min(255, Math.round(c + (amt > 0 ? (255 - c) * amt : c * amt))));
+  r = adjust(r); g = adjust(g); b = adjust(b);
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
+
 

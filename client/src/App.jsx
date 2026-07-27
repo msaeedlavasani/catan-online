@@ -5,6 +5,7 @@ import { styles } from "./styles.js";
 import { PARCHMENT, RES_COLOR, RES_LABEL, RESOURCE_TYPES, DEV_LABEL } from "./game/constants.js";
 import { emptyResources } from "./game/helpers.js";
 import BoardSVG from "./components/BoardSVG.jsx";
+import { ResourceIcon } from "./components/ResourceGlyphs.jsx";
 import { PlayersPanel, DiscardModal, YearOfPlentyModal, MonopolyModal, TradePanel } from "./components/Panels.jsx";
 
 function saveSession(roomId, playerId, playerName) {
@@ -254,6 +255,9 @@ export default function App() {
               <div style={styles.resRow}>
                 {RESOURCE_TYPES.map((r) => (
                   <div key={r} style={{ ...styles.resChip, background: RES_COLOR[r] }}>
+                    <div style={{ background: "#fff", borderRadius: "50%", padding: 2, marginBottom: 2 }}>
+                      <ResourceIcon resource={r} size={16} />
+                    </div>
                     <span>{RES_LABEL[r]}</span>
                     <b>{myPlayer.resources[r]}</b>
                   </div>
