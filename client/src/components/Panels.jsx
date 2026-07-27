@@ -16,6 +16,7 @@ export function PlayersPanel({ game, me }) {
               Score: {publicScore(p)}{p.id === me.playerId ? ` (+${p.devCards.filter(c=>c.type==='victory').length} hidden)` : ""} · Roads: {p.roads.length} · Cards: {totalResources(p.resources)}
               {p.hasLongestRoad && " · 🛣️ Longest Road"}
               {p.hasLargestArmy && " · ⚔️ Largest Army"}
+              {p.connected === false && " · ⚠️ disconnected"}
             </div>
           </div>
         </div>

@@ -7,6 +7,21 @@ import { emptyResources } from "./game/helpers.js";
 import BoardSVG from "./components/BoardSVG.jsx";
 import { PlayersPanel, DiscardModal, YearOfPlentyModal, MonopolyModal, TradePanel } from "./components/Panels.jsx";
 
+function saveSession(roomId, playerId, playerName) {
+  try {
+    localStorage.setItem("catan-session", JSON.stringify({ roomId, playerId, playerName }));
+  } catch (e) { /* ignore (private browsing etc.) */ }
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem("catan-session");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearSession() {
+  try { localStorage.removeItem("catan-session"); } catch (e) { /* ignore */ }
+}
+
 function currentSetupPlayerId(g) {
   return g.setupOrder[g.setupStep];
 }
@@ -24,6 +39,21 @@ export default function App() {
   const [yopPicks, setYopPicks] = useState([]);
   const [discardPicks, setDiscardPicks] = useState(emptyResources());
   const [actionError, setActionError] = useState("");
+  const [reconnecting, setReconnecting] = useState(false);
+
+  // On first load, try to resume a previous session (page refresh, dropped wifi, etc.)
+  useEffect(() => {
+    const session = loadSession();
+    if (!session) return;
+    setReconnecting(true);
+    socket.emit("rejoinRoom", { roomId: session.roomId, playerId: session.playerId }, (res) => {
+      setReconnecting(false);
+      if (!res || res.ok === false) { clearSession(); return; }
+      setMe({ playerId: session.playerId });
+      setGame(res.room);
+      setScreen(res.room.phase === "lobby" ? "lobby" : "game");
+    });
+  }, []);
 
   useEffect(() => {
     function onGameState(room) {
@@ -54,6 +84,7 @@ export default function App() {
       setMe({ playerId: res.playerId });
       setGame(res.room);
       setScreen("lobby");
+      saveSession(res.room.gameId, res.playerId, nameInput.trim());
     });
   }
 
@@ -64,6 +95,7 @@ export default function App() {
       setMe({ playerId: res.playerId });
       setGame(res.room);
       setScreen("lobby");
+      saveSession(res.room.gameId, res.playerId, nameInput.trim());
     });
   }
 
@@ -93,6 +125,11 @@ export default function App() {
   function onTileClick(tileId) {
     if (!game) return;
     if (game.pending?.type === "robberMove" && isMyTurn) act("moveRobber", { tileId });
+  }
+
+  /* ============================== RENDER: RECONNECTING ============================== */
+  if (reconnecting) {
+    return <div style={{ ...styles.homeWrap, color: PARCHMENT }}>Reconnecting to your game…</div>;
   }
 
   /* ============================== RENDER: HOME ============================== */
@@ -173,6 +210,12 @@ export default function App() {
     <div style={styles.gameWrap}>
       <div style={styles.topBar}>
         <div style={styles.topBarTitle}>⛵ CATAN <span style={styles.topBarCode}>#{game.gameId}</span></div>
+        <button
+          style={{ ...styles.iconBtn, fontSize: 11, padding: "4px 10px" }}
+          onClick={() => { clearSession(); window.location.reload(); }}
+        >
+          Leave
+        </button>
         <div style={styles.turnBanner}>
           {game.phase === "ended"
             ? `🏆 ${game.players.find((p) => p.id === game.winnerId)?.name} wins!`

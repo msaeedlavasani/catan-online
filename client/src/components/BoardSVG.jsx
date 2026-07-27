@@ -1,5 +1,6 @@
 import React from "react";
 import { INK, PARCHMENT, PARCHMENT_DARK, SEA, GOLD, RES_COLOR } from "../game/constants.js";
+import { styles } from "../styles.js";
 
 export default function BoardSVG({ board, robberTileId, players, buildMode, phase, setupSubPhase, isMyTurn, isMySetupTurn, lastPlacedSettlement, myPlayer, pending, onVertexClick, onEdgeClick, onTileClick }) {
   const xs = board.tiles.map((t) => t.x);
