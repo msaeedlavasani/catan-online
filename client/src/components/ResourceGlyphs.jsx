@@ -122,6 +122,19 @@ export function DesertGlyph({ x, y, scale = 1 }) {
   );
 }
 
+export function AnchorGlyph({ x, y, scale = 1 }) {
+  const c = "#5c6a75";
+  return (
+    <g transform={`translate(${x},${y}) scale(${scale})`}>
+      <circle cx="0" cy="-7.5" r="2" fill="none" stroke={c} strokeWidth="1.4" />
+      <line x1="0" y1="-5.5" x2="0" y2="7" stroke={c} strokeWidth="1.4" />
+      <line x1="-5.5" y1="-2" x2="5.5" y2="-2" stroke={c} strokeWidth="1.4" />
+      <path d="M-6,1 C-6,6 -2.5,8.5 0,9" stroke={c} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <path d="M6,1 C6,6 2.5,8.5 0,9" stroke={c} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    </g>
+  );
+}
+
 export const RESOURCE_GLYPHS = {
   wood: TreeGlyph,
   brick: BrickGlyph,

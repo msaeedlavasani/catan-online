@@ -2,7 +2,7 @@ import React from "react";
 import { INK, PARCHMENT_DARK, SEA, GOLD, RES_COLOR, COLOR_ASSET_NAME } from "../game/constants.js";
 import { shade } from "../game/helpers.js";
 import { styles } from "../styles.js";
-import { RESOURCE_GLYPHS } from "./ResourceGlyphs.jsx";
+import { RESOURCE_GLYPHS, AnchorGlyph } from "./ResourceGlyphs.jsx";
 
 const TILE_IMG = {
   wood: "/assets/tiles/wood.webp",
@@ -77,6 +77,10 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
         <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#000" floodOpacity="0.35" />
         </filter>
+        <radialGradient id="portGrad" cx="38%" cy="32%" r="75%">
+          <stop offset="0%" stopColor="#fbf3dc" />
+          <stop offset="100%" stopColor={PARCHMENT_DARK} />
+        </radialGradient>
         {board.tiles.map((t) => (
           <clipPath id={`hexclip-${t.id}`} key={t.id}>
             <polygon points={hexPoints(t)} />
@@ -109,14 +113,21 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
       {board.ports.map((port) => {
         const v1 = board.vertices[port.v1], v2 = board.vertices[port.v2];
         const mx = (v1.x + v2.x) / 2, my = (v1.y + v2.y) / 2;
-        const dx = mx * 1.18, dy = my * 1.18;
+        const dx = mx * 1.22, dy = my * 1.22;
         const Glyph = port.type === "generic" ? null : RESOURCE_GLYPHS[port.type];
+        // a couple of little "posts" along the pier connecting the shore to the badge
+        const post1x = mx + (dx - mx) * 0.35, post1y = my + (dy - my) * 0.35;
+        const post2x = mx + (dx - mx) * 0.68, post2y = my + (dy - my) * 0.68;
         return (
           <g key={port.edgeId}>
-            <line x1={dx} y1={dy} x2={mx} y2={my} stroke={GOLD} strokeWidth={2} strokeDasharray="1,4" strokeLinecap="round" />
-            <circle cx={dx} cy={dy} r={15} fill={PARCHMENT_DARK} stroke={GOLD} strokeWidth={1.5} filter="url(#softShadow)" />
-            {Glyph ? <Glyph x={dx} y={dy - 3} scale={0.75} /> : <text x={dx} y={dy - 2} textAnchor="middle" fontSize={9} fill={INK}>⚓</text>}
-            <text x={dx} y={dy + 10} textAnchor="middle" fontSize={7.5} fontWeight="700" fill={INK}>
+            <line x1={mx} y1={my} x2={dx} y2={dy} stroke="#8a6b3f" strokeWidth={3.5} strokeLinecap="round" />
+            <line x1={mx} y1={my} x2={dx} y2={dy} stroke="#b98f56" strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
+            <circle cx={post1x} cy={post1y} r={2.2} fill="#6b4f2a" />
+            <circle cx={post2x} cy={post2y} r={2.2} fill="#6b4f2a" />
+            <circle cx={dx} cy={dy} r={17} fill="url(#portGrad)" stroke={GOLD} strokeWidth={2} filter="url(#softShadow)" />
+            <circle cx={dx} cy={dy} r={13.5} fill="none" stroke={shade(GOLD, -0.2)} strokeWidth={0.6} opacity={0.6} />
+            {Glyph ? <Glyph x={dx} y={dy - 3.5} scale={0.85} /> : <AnchorGlyph x={dx} y={dy - 4} scale={0.95} />}
+            <text x={dx} y={dy + 11.5} textAnchor="middle" fontSize={8} fontWeight="700" fontFamily="Georgia, serif" fill={INK}>
               {port.type === "generic" ? "3:1" : "2:1"}
             </text>
           </g>
