@@ -1,8 +1,7 @@
 import React from "react";
-import { INK, PARCHMENT_DARK, SEA, GOLD, RES_COLOR, COLOR_ASSET_NAME } from "../game/constants.js";
+import { INK, SEA, GOLD, RES_COLOR, COLOR_ASSET_NAME } from "../game/constants.js";
 import { shade } from "../game/helpers.js";
 import { styles } from "../styles.js";
-import { RESOURCE_GLYPHS, AnchorGlyph } from "./ResourceGlyphs.jsx";
 
 const TILE_IMG = {
   wood: "/assets/tiles/wood.webp",
@@ -13,14 +12,22 @@ const TILE_IMG = {
   desert: "/assets/tiles/desert.webp",
 };
 const ROBBER_IMG = "/assets/pieces/robber.webp";
+const BOARD_FRAME_IMG = "/assets/board-frame.webp";
+// Board.png is 4725x4725 and its inner hole is centered on the image with a
+// measured scale of ~7.65 image-px per our coordinate unit, so the frame's
+// own footprint in our coordinate space is 4725/7.65 units square, centered
+// on our origin (which is also the tile cluster's center).
+const FRAME_SIZE = 4725 / 7.65;
+function harborImg(type) { return `/assets/harbors/${type}.webp`; }
 function numberImg(n) { return `/assets/numbers/${n}.webp`; }
 function pieceImg(kind, colorName) { return `/assets/pieces/${kind}-${colorName || "default"}.webp`; }
 
 export default function BoardSVG({ board, robberTileId, players, buildMode, phase, setupSubPhase, isMyTurn, isMySetupTurn, lastPlacedSettlement, myPlayer, pending, onVertexClick, onEdgeClick, onTileClick }) {
   const xs = board.tiles.map((t) => t.x);
   const ys = board.tiles.map((t) => t.y);
-  const minX = Math.min(...xs) - 90, maxX = Math.max(...xs) + 90;
-  const minY = Math.min(...ys) - 90, maxY = Math.max(...ys) + 90;
+  const half = FRAME_SIZE / 2 + 20;
+  const minX = Math.min(Math.min(...xs) - 90, -half), maxX = Math.max(Math.max(...xs) + 90, half);
+  const minY = Math.min(Math.min(...ys) - 90, -half), maxY = Math.max(Math.max(...ys) + 90, half);
   const w = maxX - minX, h = maxY - minY;
 
   const vertexOwner = {};
@@ -77,10 +84,6 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
         <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#000" floodOpacity="0.35" />
         </filter>
-        <radialGradient id="portGrad" cx="38%" cy="32%" r="75%">
-          <stop offset="0%" stopColor="#fbf3dc" />
-          <stop offset="100%" stopColor={PARCHMENT_DARK} />
-        </radialGradient>
         {board.tiles.map((t) => (
           <clipPath id={`hexclip-${t.id}`} key={t.id}>
             <polygon points={hexPoints(t)} />
@@ -89,6 +92,7 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
       </defs>
 
       <rect x={minX} y={minY} width={w} height={h} fill="url(#seaGrad)" />
+      <image href={BOARD_FRAME_IMG} x={-FRAME_SIZE / 2} y={-FRAME_SIZE / 2} width={FRAME_SIZE} height={FRAME_SIZE} preserveAspectRatio="xMidYMid slice" />
 
       {board.tiles.map((t) => {
         // The source art has a little breathing room around its own hex edge,
@@ -113,24 +117,12 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
       {board.ports.map((port) => {
         const v1 = board.vertices[port.v1], v2 = board.vertices[port.v2];
         const mx = (v1.x + v2.x) / 2, my = (v1.y + v2.y) / 2;
-        const dx = mx * 1.22, dy = my * 1.22;
-        const Glyph = port.type === "generic" ? null : RESOURCE_GLYPHS[port.type];
-        // a couple of little "posts" along the pier connecting the shore to the badge
-        const post1x = mx + (dx - mx) * 0.35, post1y = my + (dy - my) * 0.35;
-        const post2x = mx + (dx - mx) * 0.68, post2y = my + (dy - my) * 0.68;
+        // slight outward push from the shore edge toward the pre-cut slot in the frame art
+        const dx = mx * 1.28, dy = my * 1.28;
+        const size = 62;
         return (
-          <g key={port.edgeId}>
-            <line x1={mx} y1={my} x2={dx} y2={dy} stroke="#8a6b3f" strokeWidth={3.5} strokeLinecap="round" />
-            <line x1={mx} y1={my} x2={dx} y2={dy} stroke="#b98f56" strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
-            <circle cx={post1x} cy={post1y} r={2.2} fill="#6b4f2a" />
-            <circle cx={post2x} cy={post2y} r={2.2} fill="#6b4f2a" />
-            <circle cx={dx} cy={dy} r={17} fill="url(#portGrad)" stroke={GOLD} strokeWidth={2} filter="url(#softShadow)" />
-            <circle cx={dx} cy={dy} r={13.5} fill="none" stroke={shade(GOLD, -0.2)} strokeWidth={0.6} opacity={0.6} />
-            {Glyph ? <Glyph x={dx} y={dy - 3.5} scale={0.85} /> : <AnchorGlyph x={dx} y={dy - 4} scale={0.95} />}
-            <text x={dx} y={dy + 11.5} textAnchor="middle" fontSize={8} fontWeight="700" fontFamily="Georgia, serif" fill={INK}>
-              {port.type === "generic" ? "3:1" : "2:1"}
-            </text>
-          </g>
+          <image key={port.edgeId} href={harborImg(port.type)} x={dx - size / 2} y={dy - size / 2}
+            width={size} height={size} filter="url(#softShadow)" />
         );
       })}
 

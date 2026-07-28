@@ -126,17 +126,15 @@ export function assignBoardContent(geo) {
     return { ...t, resource, number };
   });
 
-  // ports: pick 9 spaced boundary edges out of ordered perimeter
-  const boundary = geo.orderedBoundary;
-  const n = boundary.length;
-  const portCount = 9;
+  // Port positions are fixed to match the 9 pre-cut harbor slots in the
+  // hand-designed board-frame artwork (measured directly from the image).
+  // Only the resource TYPE assigned to each slot is randomized per game.
+  const PORT_EDGE_IDS = [9, 18, 13, 34, 28, 52, 60, 68, 69];
   const portTypes = shuffle(["generic", "generic", "generic", "generic", "wood", "brick", "wheat", "sheep", "ore"]);
-  const ports = [];
-  for (let i = 0; i < portCount; i++) {
-    const idx = Math.floor((i * n) / portCount);
-    const edge = boundary[idx];
-    ports.push({ edgeId: edge.id, v1: edge.v1, v2: edge.v2, type: portTypes[i] });
-  }
+  const ports = PORT_EDGE_IDS.map((edgeId, i) => {
+    const edge = geo.edges[edgeId];
+    return { edgeId: edge.id, v1: edge.v1, v2: edge.v2, type: portTypes[i] };
+  });
 
   return { tiles, vertices: geo.vertices, edges: geo.edges, ports, robberTileId };
 }
