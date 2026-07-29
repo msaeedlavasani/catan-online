@@ -2,7 +2,6 @@ import React from "react";
 import { INK, SEA, GOLD, RES_COLOR, COLOR_ASSET_NAME } from "../game/constants.js";
 import { shade } from "../game/helpers.js";
 import { styles } from "../styles.js";
-import { RESOURCE_GLYPHS, AnchorGlyph } from "./ResourceGlyphs.jsx";
 
 const TILE_IMG = {
   wood: "/assets/tiles/wood.webp",
@@ -137,20 +136,9 @@ export default function BoardSVG({ board, robberTileId, players, buildMode, phas
         const mx = (v1.x + v2.x) / 2, my = (v1.y + v2.y) / 2;
         const dx = slot ? slot.x : mx * 1.28, dy = slot ? slot.y : my * 1.28;
         const size = 62;
-        const Glyph = port.type === "generic" ? null : RESOURCE_GLYPHS[port.type];
-        // small badge overlapping the bottom of the dock, since the carved sign
-        // on the artwork itself is too small to read at board scale
-        const badgeX = dx, badgeY = dy + size * 0.32;
         return (
-          <g key={port.edgeId}>
-            <image href={harborImg(port.type)} x={dx - size / 2} y={dy - size / 2}
-              width={size} height={size} filter="url(#softShadow)" />
-            <circle cx={badgeX} cy={badgeY} r={11} fill="#2b2118" stroke={GOLD} strokeWidth={1.4} />
-            {Glyph ? <Glyph x={badgeX} y={badgeY - 3} scale={0.55} /> : <AnchorGlyph x={badgeX} y={badgeY - 2.5} scale={0.6} />}
-            <text x={badgeX} y={badgeY + 7} textAnchor="middle" fontSize={5.5} fontWeight="700" fontFamily="Georgia, serif" fill={GOLD}>
-              {port.type === "generic" ? "3:1" : "2:1"}
-            </text>
-          </g>
+          <image key={port.edgeId} href={harborImg(port.type)} x={dx - size / 2} y={dy - size / 2}
+            width={size} height={size} filter="url(#softShadow)" />
         );
       })}
 

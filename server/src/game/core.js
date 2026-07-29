@@ -111,9 +111,57 @@ export function assignBoardContent(geo) {
     "desert",
   ];
   const NUMBER_POOL = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12];
-  const resources = shuffle(RESOURCE_POOL);
+
+  // Build hex-adjacency (tiles sharing an edge) from axial coordinates once.
+  const AXIAL_DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  const byQR = new Map(geo.tiles.map((t) => [`${t.q},${t.r}`, t.id]));
+  const neighbors = geo.tiles.map((t) => {
+    return AXIAL_DIRS.map(([dq, dr]) => byQR.get(`${t.q + dq},${t.r + dr}`)).filter((id) => id !== undefined);
+  });
+
+  function countResourceClashes(resources) {
+    let clashes = 0;
+    resources.forEach((r, i) => {
+      if (r === "desert") return;
+      neighbors[i].forEach((nid) => { if (nid > i && resources[nid] === r) clashes++; });
+    });
+    return clashes;
+  }
+  function countRedNumberClashes(numbersByTile) {
+    let clashes = 0;
+    numbersByTile.forEach((n, i) => {
+      if (n !== 6 && n !== 8) return;
+      neighbors[i].forEach((nid) => { if (nid > i && (numbersByTile[nid] === 6 || numbersByTile[nid] === 8)) clashes++; });
+    });
+    return clashes;
+  }
+
+  // Try a number of random shuffles and keep the best (fewest same-resource
+  // neighbors / adjacent 6-8 pairs) instead of a single naive shuffle, so
+  // the board doesn't end up with resources clumped together by chance.
+  let bestResources = null, bestResourceScore = Infinity;
+  for (let attempt = 0; attempt < 1500; attempt++) {
+    const candidate = shuffle(RESOURCE_POOL);
+    const score = countResourceClashes(candidate);
+    if (score < bestResourceScore) { bestResourceScore = score; bestResources = candidate; }
+    if (score === 0) break;
+  }
+  const resources = bestResources;
+
+  let bestNumbers = null, bestNumberScore = Infinity;
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const candidate = shuffle(NUMBER_POOL);
+    // numbers are assigned only to non-desert tiles in order, so simulate that mapping
+    const numbersByTile = new Array(geo.tiles.length).fill(null);
+    let idx = 0;
+    resources.forEach((r, i) => { if (r !== "desert") numbersByTile[i] = candidate[idx++]; });
+    const score = countRedNumberClashes(numbersByTile);
+    if (score < bestNumberScore) { bestNumberScore = score; bestNumbers = candidate; }
+    if (score === 0) break;
+  }
+  const numbers = bestNumbers;
+
   let numIdx = 0;
-  const numbers = shuffle(NUMBER_POOL);
   let robberTileId = null;
   const tiles = geo.tiles.map((t, i) => {
     const resource = resources[i];
