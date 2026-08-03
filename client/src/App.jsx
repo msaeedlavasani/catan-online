@@ -180,7 +180,7 @@ export default function App() {
               {copyOk ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
-          <p style={styles.subtitle}>Share this code. 2–6 sailors may join.</p>
+          <p style={styles.subtitle}>Share this code. 2–4 sailors may join.</p>
           <div style={styles.playerList}>
             {game.players.map((p, i) => (
               <div key={p.id} style={styles.playerRow}>

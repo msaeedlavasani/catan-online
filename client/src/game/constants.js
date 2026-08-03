@@ -14,7 +14,7 @@ export const RES_COLOR = {
   desert: "#d9c896",
 };
 export const RES_LABEL = { wood: "Timber", brick: "Brick", wheat: "Grain", sheep: "Wool", ore: "Ore", desert: "Desert" };
-export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a", "#6a4c93", "#c9556e"];
+export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
 // Only 4 of our 6 player colors currently have matching hand-made piece art
 // (red/blue/orange/green). Purple and pink fall back to the plain vector shapes.

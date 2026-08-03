@@ -27,7 +27,7 @@ export function joinRoom(roomId, playerName) {
   const game = rooms.get(roomId);
   if (!game) return null;
   if (game.phase !== "lobby") return null;
-  if (game.players.length >= 6) return null;
+  if (game.players.length >= 4) return null; // only 4 player colors have matching art
   const player = newPlayer(playerName || "Player", cryptoId());
   game.players.push(player);
   game.log.push(`${player.name} joined the game.`);
