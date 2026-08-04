@@ -247,10 +247,16 @@
 
 ## ترتیب پیشنهادی اجرا
 
-1. `ISS-016` و `ISS-004`: تمیز کردن working tree و تثبیت نصب.
-2. `ISS-001` تا `ISS-003`: بستن سطح حمله‌ی پایه.
-3. `ISS-002`, `ISS-008`, `ISS-009`: validation و authorization ورودی‌ها.
-4. `ISS-006`: تست‌های engine قبل از refactorهای بزرگ.
-5. `ISS-007`, `ISS-010`: اصلاح قراردادهای محصول و state.
-6. `ISS-011` تا `ISS-015`: shared contract، tooling و CI.
+1. `ISS-016` و `ISS-004`: تمیز کردن working tree و تثبیت نصب — انجام شد.
+2. `ISS-001` تا `ISS-003`: بستن سطح حمله‌ی پایه — انجام شد.
+3. `ISS-002`, `ISS-008`, `ISS-009`: validation و authorization ورودی‌ها — انجام شد.
+4. `ISS-006`: تست‌های core و engine — بخش unit انجام شد؛ end-to-end باز است.
+5. `ISS-007`: ظرفیت و assetهای رسمی — تست ظرفیت انجام شد؛ source of truth UI باز است.
+6. `ISS-005`, `ISS-010`: persistence و قرارداد undo — باز.
+7. `ISS-011` تا `ISS-015`: shared contract، formatter، branch protection و readiness/liveness — بخشی انجام شد؛ موارد علامت‌گذاری‌شده باز هستند.
+
+## روند batch توسعه
+
+برای حفظ context و کنترل کیفیت، هر batch حداکثر پنج تسک مستقل دارد. agentها فقط کد و تست تسک خود را اجرا می‌کنند و مستندات/commit/push انجام نمی‌دهند. agent اصلی بعد از بررسی خروجی همه‌ی agentها، quality gate و verify مستقل، `README.md`، `HANDOFF.md` و همین فایل را به‌روز می‌کند و یک commit واحد push می‌کند. این قرارداد باید در انتقال پروژه به گفت‌وگو یا اکانت دیگر نیز حفظ شود.
+
 7. سپس reconnect، persistence، حساب کاربری و UX.
