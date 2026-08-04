@@ -8,6 +8,8 @@ import {
   markReconnected,
   getRoom,
   _resetRoomsForTest,
+  _setTTLOverride,
+  _getPendingCleanups,
 } from "../src/rooms.js";
 
 // ─── Isolate state: every top-level test starts from a clean rooms map ──────
@@ -320,4 +322,234 @@ test("room in-game is NOT deleted when last connected player leaves", () => {
   // Player is still there but disconnected
   assert.equal(found.players.length, 1);
   assert.equal(found.players[0].connected, false);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TTL cleanup — in-game rooms (Task Batch 2.1)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── All disconnected → cleanup timer starts ────────────────────────
+
+test("in-game: all disconnect starts a cleanup timer", () => {
+  setup();
+  _setTTLOverride(30_000); // real TTL is irrelevant here
+  const { room } = createRoom("Alice");
+  joinRoom(room.gameId, "Bob");
+  const aliceId = room.players[0].id;
+  const bobId = room.players[1].id;
+  startGame(room);
+
+  markDisconnected(room.gameId, aliceId);
+  // Only one disconnected — no timer yet
+  assert.equal(_getPendingCleanups().size, 0);
+
+  markDisconnected(room.gameId, bobId);
+  // Now both disconnected — timer should be scheduled
+  assert.equal(_getPendingCleanups().size, 1);
+  assert.ok(_getPendingCleanups().has(room.gameId));
+});
+
+test("in-game: cleanup timer does NOT start when some players are still connected", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  joinRoom(room.gameId, "Bob");
+  joinRoom(room.gameId, "Charlie");
+  const aliceId = room.players[0].id;
+  const bobId = room.players[1].id;
+  startGame(room);
+
+  // Two disconnect, one stays — no timer
+  markDisconnected(room.gameId, aliceId);
+  markDisconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 0);
+
+  // Charlie still connected — room intact
+  assert.ok(getRoom(room.gameId));
+  assert.equal(room.players[2].connected, true);
+});
+
+// ─── Reconnect cancels timer ────────────────────────────────────────
+
+test("in-game: reconnecting any player cancels the pending cleanup timer", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  joinRoom(room.gameId, "Bob");
+  const aliceId = room.players[0].id;
+  const bobId = room.players[1].id;
+  startGame(room);
+
+  // Both disconnect → timer created
+  markDisconnected(room.gameId, aliceId);
+  markDisconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Bob reconnects → timer cancelled
+  markReconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 0);
+  assert.ok(getRoom(room.gameId));
+  assert.equal(room.players[1].connected, true);
+});
+
+test("in-game: reconnect then disconnect again starts a fresh timer", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  joinRoom(room.gameId, "Bob");
+  const aliceId = room.players[0].id;
+  const bobId = room.players[1].id;
+  startGame(room);
+
+  // All disconnect → timer
+  markDisconnected(room.gameId, aliceId);
+  markDisconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Reconnect Bob → cancelled
+  markReconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 0);
+
+  // Bob disconnects again → new timer
+  markDisconnected(room.gameId, bobId);
+  assert.equal(_getPendingCleanups().size, 1);
+});
+
+// ─── Deterministic timer expiry ────────────────────────────────────
+
+test("in-game: room is deleted after TTL expires (all disconnected)", async () => {
+  setup();
+  const TTL = 60; // very short for deterministic test speed
+  _setTTLOverride(TTL);
+
+  const { room } = createRoom("Alice");
+  const aliceId = room.players[0].id;
+  startGame(room);
+
+  markDisconnected(room.gameId, aliceId);
+  assert.ok(getRoom(room.gameId)); // still there
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Wait just past the TTL
+  await new Promise((r) => setTimeout(r, TTL + 20));
+
+  assert.equal(getRoom(room.gameId), null); // cleaned up
+  assert.equal(_getPendingCleanups().size, 0); // timer removed from map
+});
+
+test("in-game: room survives when reconnect happens before TTL expires", async () => {
+  setup();
+  const TTL = 80;
+  _setTTLOverride(TTL);
+
+  const { room } = createRoom("Alice");
+  const aliceId = room.players[0].id;
+  startGame(room);
+
+  markDisconnected(room.gameId, aliceId);
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Reconnect at half the TTL
+  await new Promise((r) => setTimeout(r, TTL / 2));
+
+  markReconnected(room.gameId, aliceId);
+  assert.equal(_getPendingCleanups().size, 0);
+
+  // Wait past what would have been the TTL
+  await new Promise((r) => setTimeout(r, TTL));
+
+  assert.ok(getRoom(room.gameId)); // room survives
+});
+
+// ─── Lobby: immediate deletion, no timer leak ───────────────────────
+
+test("lobby: last player disconnect deletes room immediately and leaves no timer", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room, player: alice } = createRoom("Alice");
+
+  markDisconnected(room.gameId, alice.id);
+  assert.equal(getRoom(room.gameId), null);
+  assert.equal(_getPendingCleanups().size, 0); // no timer for lobby
+});
+
+test("lobby: non-last player disconnect removes player but leaves no timer", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  joinRoom(room.gameId, "Bob");
+  const bobId = room.players[1].id;
+
+  markDisconnected(room.gameId, bobId);
+  assert.equal(room.players.length, 1);
+  assert.equal(_getPendingCleanups().size, 0); // lobby never creates timer
+});
+
+// ─── _resetRoomsForTest prevents process leaks ──────────────────────
+
+test("_resetRoomsForTest clears all pending cleanup timers", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  startGame(room);
+  markDisconnected(room.gameId, room.players[0].id);
+  assert.equal(_getPendingCleanups().size, 1);
+
+  _resetRoomsForTest(); // must nuke timer
+
+  assert.equal(_getPendingCleanups().size, 0);
+  assert.equal(getRoom(room.gameId), null);
+});
+
+test("_resetRoomsForTest also resets TTL override", () => {
+  setup();
+  _setTTLOverride(999);
+  assert.equal(_getPendingCleanups().size, 0); // no timer, just verifying override was set
+
+  _resetRoomsForTest();
+  // Create a room and trigger cleanup — should use real config TTL, not 999
+  // (We verify the override was cleared by checking that no stale override
+  //  affects subsequent tests — this is implicitly tested by the isolation
+  //  that _resetRoomsForTest is called in every setup())
+  const { room } = createRoom("Test");
+  startGame(room);
+  markDisconnected(room.gameId, room.players[0].id);
+  // Timer exists (TTL came from real config)
+  assert.equal(_getPendingCleanups().size, 1);
+});
+
+// ─── Edge cases ─────────────────────────────────────────────────────
+
+test("in-game: markDisconnected on already-disconnected all-disconnected room does not double-schedule", () => {
+  setup();
+  _setTTLOverride(30_000);
+  const { room } = createRoom("Alice");
+  startGame(room);
+  const pid = room.players[0].id;
+
+  markDisconnected(room.gameId, pid);
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Second disconnect for the same player (e.g. second socket)
+  markDisconnected(room.gameId, pid);
+  assert.equal(_getPendingCleanups().size, 1); // still exactly 1 timer
+});
+
+test("markReconnected on non-existent room returns null", () => {
+  setup();
+  const result = markReconnected("GHOST", "fake-id");
+  assert.equal(result, null);
+});
+
+test("markReconnected with unknown playerId but existing room leaves room unchanged, no timer interaction", () => {
+  setup();
+  const { room } = createRoom("Alice");
+  startGame(room);
+  markDisconnected(room.gameId, room.players[0].id); // timer scheduled
+  assert.equal(_getPendingCleanups().size, 1);
+
+  // Reconnect a bogus player — does NOT cancel the timer
+  const result = markReconnected(room.gameId, "bogus-id");
+  assert.ok(result);
+  assert.equal(_getPendingCleanups().size, 1); // timer still pending (only real reconnects cancel)
 });

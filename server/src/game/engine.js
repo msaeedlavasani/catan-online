@@ -51,6 +51,8 @@ function snapshotCheckpoint(g) {
     devDeck: [...g.devDeck],
     longestRoadPlayerId: g.longestRoadPlayerId,
     largestArmyPlayerId: g.largestArmyPlayerId,
+    robberTileId: g.robberTileId,
+    hasPlayedDevCardThisTurn: g.hasPlayedDevCardThisTurn,
   };
 }
 function refreshCheckpoint(g) {
@@ -72,6 +74,8 @@ function restoreCheckpoint(g, snap) {
   g.devDeck = [...snap.devDeck];
   g.longestRoadPlayerId = snap.longestRoadPlayerId;
   g.largestArmyPlayerId = snap.largestArmyPlayerId;
+  g.robberTileId = snap.robberTileId;
+  g.hasPlayedDevCardThisTurn = snap.hasPlayedDevCardThisTurn;
 }
 
 export function undoTurnActions(g, playerId) {
@@ -79,8 +83,17 @@ export function undoTurnActions(g, playerId) {
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.pending) return fail("Resolve the pending action first.");
   if (!g.turnCheckpoint) return fail("Nothing to undo.");
+
+  // Detect no-op undo (state already matches checkpoint — nothing changed).
+  if (JSON.stringify(g.turnCheckpoint) === JSON.stringify(snapshotCheckpoint(g))) {
+    return fail("Already at the last safe point; nothing to undo.");
+  }
+
   const player = g.players.find((p) => p.id === playerId);
   restoreCheckpoint(g, g.turnCheckpoint);
+  // Move the checkpoint forward to the restored state so a repeated undo
+  // without any new actions in between is detected as a no-op.
+  refreshCheckpoint(g);
   g.log.push(`${player.name} کارای این نوبتش رو برگردوند.`);
   return OK;
 }

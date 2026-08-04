@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+# Engine / rooms / config — protected from formatting
+server/src/config.js
+server/src/rooms.js
+server/src/game/engine.js
+server/src/game/core.js
+
+# Build output
+client/dist/

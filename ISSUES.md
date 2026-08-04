@@ -72,15 +72,15 @@
 ### ISS-005 — اصلاح مدل نگهداری روم‌ها و persistence
 
 - **شدت:** P1 / قابلیت محصول
-- **محل:** `server/src/rooms.js`, `server/src/game/core.js`
-- **وضعیت فعلی:** persistence هنوز باز است؛ lifecycle lobby و cleanup روم خالی در این batch تست و تثبیت شد.
-- **مشکل:** state فقط در `Map` حافظه نگهداری می‌شود.
-- **اثر:** restart، crash یا اجرای چند process باعث از دست رفتن بازی و ناسازگاری state می‌شود.
-- **راه‌حل پیشنهادی:** برای MVP کوتاه‌مدت TTL روم‌های in-game را مشخص کنید؛ برای persistence واقعی storage/DB و در صورت scale شدن shared store اضافه کنید. مستندات نباید ادعا کند SQLite فعال است.
+- **وضعیت:** lifecycle و TTL روم in-memory در این batch تکمیل شد؛ persistence چندپردازشی هنوز باز است.
+- **محل:** `server/src/rooms.js`, `server/src/config.js`, `server/test/rooms.test.js`
+- **راه‌حل اعمال‌شده:** روم خالی lobby فوراً حذف می‌شود؛ اگر همه‌ی بازیکنان in-game قطع شوند، timer قابل‌تنظیم با `ROOM_TTL_MS` شروع می‌شود. reconnect قبل از TTL timer را cancel می‌کند و timer با `unref` مانع خروج process نمی‌شود.
+- **اثر باقی‌مانده:** restart، crash یا اجرای چند process هنوز state را از بین می‌برد.
 - **معیار پذیرش:**
   - [ ] رفتار restart برای کاربر مستند و تست شده باشد.
-  - [x] روم خالی در lobby cleanup می‌شود و تست lifecycle دارد.
-  - [ ] تصمیم persistence در roadmap و config شفاف باشد.
+  - [x] روم خالی در lobby cleanup می‌شود.
+  - [x] reconnect قبل/بعد از TTL و تنظیم `ROOM_TTL_MS` تست شده است.
+  - [ ] persistence واقعی در storage/DB اضافه شود.
 
 ### ISS-006 — گسترش تست‌های unit برای قوانین اصلی بازی
 
@@ -130,14 +130,15 @@
 ### ISS-010 — اصلاح state undo و checkpointهای ناقص
 
 - **شدت:** P1 / صحت بازی
-- **محل:** `server/src/game/engine.js:19-62`, `server/src/game/engine.js:64-71`
-- **مشکل:** checkpoint بخشی از state را ذخیره می‌کند، اما همه‌ی stateهای وابسته به نوبت/اکشن را تضمین نمی‌کند و بعد از undo نیز checkpoint مصرف/بازتنظیم نمی‌شود.
-- **اثر:** undo می‌تواند state ناسازگار بسازد یا امکان تکرار غیرمنتظره‌ی revert را بدهد.
-- **راه‌حل پیشنهادی:** قرارداد دقیق undo را مشخص کنید، snapshot را versioned و کامل کنید، بعد از restore checkpoint را invalidate یا به‌صورت شفاف refresh کنید.
+- **وضعیت:** قرارداد اصلی undo در این batch تثبیت و تست شد؛ طراحی undo چندمرحله‌ای هنوز باز است.
+- **محل:** `server/src/game/engine.js`, `server/test/engine.test.js`
+- **راه‌حل اعمال‌شده:** snapshot اکنون robber و وضعیت کارت توسعه را هم نگه می‌دارد؛ بعد از restore checkpoint refresh می‌شود و undo تکراری بدون action با خطای کنترل‌شده رد می‌شود.
+- **تست:** ۱۹ تست برای no-op undo، checkpoint lifecycle، public/private consistency و sequenceهای ترکیبی build/trade/dev-card اضافه شد.
 - **معیار پذیرش:**
-  - [ ] تست ترکیبی build/trade/dev-card/undo داشته باشد.
-  - [ ] undo دوباره بدون اکشن جدید رفتار تعریف‌شده داشته باشد.
-  - [ ] stateهای public/private بعد از undo سازگار باشند.
+  - [x] تست ترکیبی build/trade/dev-card/undo وجود دارد.
+  - [x] undo دوباره بدون اکشن جدید رفتار تعریف‌شده دارد.
+  - [x] stateهای public/private بعد از undo سازگار می‌مانند.
+  - [ ] undo چندمرحله‌ای یا history کامل در صورت نیاز محصول طراحی شود.
 
 ---
 
@@ -146,14 +147,15 @@
 ### ISS-011 — حذف duplication بین client و server
 
 - **شدت:** P2 / نگه‌داری
-- **محل:** `client/src/game/constants.js`, `server/src/game/core.js`
-- **مشکل:** هزینه‌ها، resource typeها، رنگ بازیکن‌ها و labelها در دو محل مستقل تعریف شده‌اند.
-- **اثر:** تغییر یک قانون ممکن است فقط در یک سمت اعمال شود.
-- **راه‌حل پیشنهادی:** package یا پوشه‌ی `shared/` با قراردادهای مشترک بسازید؛ labelهای UI را از منطق server جدا نگه دارید.
+- **وضعیت:** بخش constants اصلی رفع شد؛ shared contractهای بیشتر هنوز باز هستند.
+- **محل:** `shared/game-constants.mjs`, `client/src/game/constants.js`, `server/src/game/core.js`, `shared/game-constants.test.mjs`
+- **راه‌حل اعمال‌شده:** `RESOURCE_TYPES` و `BUILD_COST` در shared module به‌صورت frozen تعریف شده‌اند و client/server آن‌ها را re-export می‌کنند؛ labelهای presentation همچنان در سمت UI باقی مانده‌اند.
+- **تست:** ۹ تست contract برای مقادیر canonical، immutability و resource keys.
 - **معیار پذیرش:**
-  - [ ] BUILD_COST و RESOURCE_TYPES یک source of truth داشته باشند.
-  - [ ] build client/server بدون import path شکننده انجام شود.
-  - [ ] contract test برای state و event payload اضافه شود.
+  - [x] BUILD_COST و RESOURCE_TYPES یک source of truth دارند.
+  - [x] client build و server test با import مشترک موفق‌اند.
+  - [x] labelهای UI به server منتقل نشده‌اند.
+  - [ ] سایر state/event contractها نیز shared و versioned شوند.
 
 ### ISS-012 — یکسان‌سازی ترجمه‌ها و متن‌های قابل نمایش
 
@@ -169,15 +171,13 @@
 ### ISS-013 — تکمیل lint/format و quality gate
 
 - **شدت:** P2 / کیفیت
-- **وضعیت:** ESLint و scriptهای `lint` اضافه شده‌اند؛ formatter هنوز باقی است.
-- **محل:** `client/package.json`, `server/package.json`
-- **مشکل باقی‌مانده:** format check مشترک وجود ندارد.
-- **اثر:** بخشی از style drift و خطاهای ساده در review دیر پیدا می‌شوند.
-- **راه‌حل پیشنهادی:** Prettier را متناسب با ESM/JSX تنظیم و scriptهای `format:check` و `format` اضافه کنید.
+- **وضعیت:** رفع شد در این batch.
+- **محل:** `.prettierrc`, `.prettierignore`, `client/package.json`, `server/package.json`, `.github/workflows/ci.yml`
+- **راه‌حل اعمال‌شده:** Prettier و `format:check` در client/server فعال شدند و CI پیش از lint آن‌ها را اجرا می‌کند.
 - **معیار پذیرش:**
   - [x] lint در هر دو package اجرا شود.
-  - [ ] format check deterministic باشد.
-  - [x] CI روی lint شکست را گزارش کند.
+  - [x] format check deterministic باشد.
+  - [x] CI روی format و lint شکست را گزارش کند.
 
 ### ISS-014 — تکمیل CI برای نصب، build، lint و test
 
@@ -194,15 +194,15 @@
 ### ISS-015 — مدیریت پیکربندی و health check production
 
 - **شدت:** P2 / عملیاتی
-- **وضعیت:** بخش اصلی رفع شد در این batch؛ readiness/liveness تفکیک‌شده هنوز باز است.
+- **وضعیت:** بخش config و health اصلی رفع شد؛ readiness/liveness و TTL config در این batch تکمیل شدند.
 - **محل:** `server/src/config.js`, `server/src/index.js`, `server/test/config.test.js`, `server/test/health.test.js`, `server/test/shutdown.test.js`
-- **راه‌حل اعمال‌شده:** PORT به عدد صحیح ۱ تا ۶۵۵۳۵ validate می‌شود؛ health شامل `ok`, `service`, `uptime`, `pid` است؛ shutdown روی SIGTERM/SIGINT ابتدا Socket.io و سپس HTTP را می‌بندد و timeout محافظ دارد.
-- **تست:** config، health و ترتیب graceful shutdown تست شده‌اند.
+- **راه‌حل اعمال‌شده:** PORT و `ROOM_TTL_MS` validate می‌شوند؛ `/health` backward-compatible است؛ `/health/live` liveness و `/health/ready` readiness با room-store و memory check اضافه شدند؛ graceful shutdown حفظ شده است.
+- **تست:** config، health/live/ready و ترتیب graceful shutdown تست شده‌اند.
 - **معیار پذیرش:**
   - [x] config نامعتبر مقدار کنترل‌شده دارد و warning/fallback می‌دهد.
   - [x] shutdown اتصال‌ها را به‌ترتیب تمیز می‌بندد.
   - [x] health endpoint قراردادی و مستند است.
-  - [ ] readiness و liveness جداگانه اضافه شوند.
+  - [x] readiness و liveness جداگانه اضافه شده‌اند.
 
 ### ISS-016 — نگه‌داشتن خروجی تولیدی و فایل‌های سیستم خارج از git
 

@@ -54,8 +54,14 @@ test("gracefulShutdown logs the signal name and shutdown message", () => {
   try {
     gracefulShutdown(mockServer(tracker), mockIo(tracker), "SIGINT");
 
-    assert.ok(logs.some((m) => m.includes("SIGINT")), "should log signal name");
-    assert.ok(logs.some((m) => m.toLowerCase().includes("shutting down")), "should log shutdown message");
+    assert.ok(
+      logs.some((m) => m.includes("SIGINT")),
+      "should log signal name",
+    );
+    assert.ok(
+      logs.some((m) => m.toLowerCase().includes("shutting down")),
+      "should log shutdown message",
+    );
   } finally {
     process.exit = originalExit;
     console.log = originalLog;
@@ -102,8 +108,16 @@ test("gracefulShutdown schedules a force-exit timer (10 s)", () => {
 
   try {
     gracefulShutdown(
-      { close(cb) { cb(); } },
-      { close(cb) { cb(); } },
+      {
+        close(cb) {
+          cb();
+        },
+      },
+      {
+        close(cb) {
+          cb();
+        },
+      },
       "SIGTERM",
     );
     assert.ok(timers.length > 0, "should schedule a force-exit timer");
@@ -122,7 +136,9 @@ test("gracefulShutdown force-exits with code 1 on timeout", (t, done) => {
 
   // io closes, but server never calls its callback (stuck)
   const stuckServer = {
-    close(_cb) { /* never calls cb */ },
+    close(_cb) {
+      /* never calls cb */
+    },
   };
 
   // Reduce the 10 s timeout to 200 ms for the test

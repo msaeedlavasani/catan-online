@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assignBoardContent, buildBoardGeometry, createLobbyState, newPlayer } from "../src/game/core.js";
+import {
+  assignBoardContent,
+  buildBoardGeometry,
+  createLobbyState,
+  newPlayer,
+} from "../src/game/core.js";
 import * as engine from "../src/game/engine.js";
 import { validateBoardId, validatePayload } from "../src/validation.js";
 
@@ -46,7 +51,10 @@ test("rejects board ids outside the generated board", () => {
 
 test("returns an error instead of throwing for invalid engine ids and players", () => {
   const game = setupGame();
-  assert.deepEqual(engine.placeSetupSettlement(game, "p1", 9999), { ok: false, error: "Invalid vertex." });
+  assert.deepEqual(engine.placeSetupSettlement(game, "p1", 9999), {
+    ok: false,
+    error: "Invalid vertex.",
+  });
   assert.deepEqual(engine.placeSetupRoad(game, "p1", 9999), { ok: false, error: "Invalid edge." });
   assert.deepEqual(engine.rollDice(game, "unknown"), { ok: false, error: "Unknown player." });
 });

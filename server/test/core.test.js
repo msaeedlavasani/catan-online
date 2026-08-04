@@ -81,7 +81,7 @@ test("hexToPixel produces consistent coordinates", () => {
 test("hexToPixel with non-zero r shifts y", () => {
   const p = hexToPixel(0, 1, 52);
   assert.equal(p.x, 26 * Math.sqrt(3)); // q=0, r=1 → x = 52*√3*1/2 = 26√3
-  assert.equal(p.y, 52 * 1.5);          // y = 52*1.5*1 = 78
+  assert.equal(p.y, 52 * 1.5); // y = 52*1.5*1 = 78
 });
 
 test("cornerPixel at i=0 (top-right corner) matches known angle", () => {
@@ -145,9 +145,7 @@ test("buildBoardGeometry every edge belongs to 1 or 2 tiles", () => {
 
 test("buildBoardGeometry orderedBoundary contains boundary edges only", () => {
   const geo = buildBoardGeometry();
-  const boundaryIds = new Set(
-    geo.edges.filter((e) => e.hexIds.length === 1).map((e) => e.id),
-  );
+  const boundaryIds = new Set(geo.edges.filter((e) => e.hexIds.length === 1).map((e) => e.id));
   // orderedBoundary should contain exactly the boundary edges
   assert.equal(geo.orderedBoundary.length, boundaryIds.size);
   for (const e of geo.orderedBoundary) {
@@ -237,17 +235,17 @@ test("totalResources on empty is 0", () => {
 
 test("canAfford returns true when resources >= cost", () => {
   const res = { wood: 2, brick: 1, wheat: 5, sheep: 3, ore: 4 };
-  assert.equal(canAfford(res, BUILD_COST.road), true);        // 1 wood, 1 brick
-  assert.equal(canAfford(res, BUILD_COST.settlement), true);   // 1 each of 4
-  assert.equal(canAfford(res, BUILD_COST.city), true);          // 2 wheat, 3 ore
-  assert.equal(canAfford(res, BUILD_COST.devCard), true);      // 1 wheat, 1 sheep, 1 ore
+  assert.equal(canAfford(res, BUILD_COST.road), true); // 1 wood, 1 brick
+  assert.equal(canAfford(res, BUILD_COST.settlement), true); // 1 each of 4
+  assert.equal(canAfford(res, BUILD_COST.city), true); // 2 wheat, 3 ore
+  assert.equal(canAfford(res, BUILD_COST.devCard), true); // 1 wheat, 1 sheep, 1 ore
 });
 
 test("canAfford returns false when short", () => {
   const res = { wood: 0, brick: 5, wheat: 0, sheep: 0, ore: 0 };
-  assert.equal(canAfford(res, BUILD_COST.road), false);       // needs wood
+  assert.equal(canAfford(res, BUILD_COST.road), false); // needs wood
   assert.equal(canAfford(res, BUILD_COST.settlement), false); // needs 4 types
-  assert.equal(canAfford(res, BUILD_COST.city), false);       // needs wheat & ore
+  assert.equal(canAfford(res, BUILD_COST.city), false); // needs wheat & ore
 });
 
 test("canAfford returns false for exact shortage by 1", () => {
@@ -418,14 +416,20 @@ test("playerOwnsEdgeVertexOrRoad via settlement on v1", () => {
   const geo = buildBoardGeometry();
   const e = geo.edges[0];
   const player = { settlements: [e.v1], cities: [], roads: [] };
-  assert.equal(playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player), true);
+  assert.equal(
+    playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player),
+    true,
+  );
 });
 
 test("playerOwnsEdgeVertexOrRoad via city on v2", () => {
   const geo = buildBoardGeometry();
   const e = geo.edges[0];
   const player = { settlements: [], cities: [e.v2], roads: [] };
-  assert.equal(playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player), true);
+  assert.equal(
+    playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player),
+    true,
+  );
 });
 
 test("playerOwnsEdgeVertexOrRoad via shared road at vertex", () => {
@@ -434,13 +438,19 @@ test("playerOwnsEdgeVertexOrRoad via shared road at vertex", () => {
   const e = geo.edges[0];
   const neighborEdges = geo.vertices[e.v1].edgeIds.filter((eid) => eid !== 0);
   const player = { settlements: [], cities: [], roads: [neighborEdges[0]] };
-  assert.equal(playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player), true);
+  assert.equal(
+    playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player),
+    true,
+  );
 });
 
 test("playerOwnsEdgeVertexOrRoad returns false when disconnected", () => {
   const geo = buildBoardGeometry();
   const player = { settlements: [], cities: [], roads: [] };
-  assert.equal(playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player), false);
+  assert.equal(
+    playerOwnsEdgeVertexOrRoad({ edges: geo.edges, vertices: geo.vertices }, 0, player),
+    false,
+  );
 });
 
 test("vertexConnectsToPlayerRoad true when one edge of vertex is a road", () => {
@@ -501,8 +511,8 @@ test("longestRoadLength detects the longest branch in a Y shape", () => {
 
 test("publicScore counts settlements and cities", () => {
   const p = {
-    settlements: [1, 2, 3],      // 3 VP
-    cities: [4, 5],              // 4 VP
+    settlements: [1, 2, 3], // 3 VP
+    cities: [4, 5], // 4 VP
     hasLongestRoad: false,
     hasLargestArmy: false,
   };
@@ -542,10 +552,10 @@ test("publicScore includes both bonuses", () => {
 
 test("totalScore adds hidden victory point dev cards", () => {
   const p = {
-    settlements: [1, 2],    // 2 VP
-    cities: [3],            // 2 VP
+    settlements: [1, 2], // 2 VP
+    cities: [3], // 2 VP
     hasLongestRoad: false,
-    hasLargestArmy: true,   // 2 VP
+    hasLargestArmy: true, // 2 VP
     devCards: [
       { type: "victory", id: "a", boughtTurn: 1 },
       { type: "victory", id: "b", boughtTurn: 2 },
@@ -580,24 +590,40 @@ test("publicGameState strips resources and devCards from players", () => {
     currentPlayerIndex: 0,
     players: [
       {
-        id: "p1", name: "Ali", color: "#b23a2e",
+        id: "p1",
+        name: "Ali",
+        color: "#b23a2e",
         resources: { wood: 3, brick: 2, wheat: 1, sheep: 4, ore: 0 },
         devCards: [{ type: "knight", id: "x", boughtTurn: 1 }],
-        roads: [1, 2], settlements: [5], cities: [],
-        knightsPlayed: 0, hasLongestRoad: false, hasLargestArmy: false,
+        roads: [1, 2],
+        settlements: [5],
+        cities: [],
+        knightsPlayed: 0,
+        hasLongestRoad: false,
+        hasLargestArmy: false,
         connected: true,
       },
       {
-        id: "p2", name: "Bob", color: "#2b6ca3",
+        id: "p2",
+        name: "Bob",
+        color: "#2b6ca3",
         resources: { wood: 0, brick: 0, wheat: 0, sheep: 0, ore: 2 },
         devCards: [],
-        roads: [3], settlements: [7], cities: [8],
-        knightsPlayed: 1, hasLongestRoad: false, hasLargestArmy: false,
+        roads: [3],
+        settlements: [7],
+        cities: [8],
+        knightsPlayed: 1,
+        hasLongestRoad: false,
+        hasLargestArmy: false,
         connected: true,
       },
     ],
-    board: null, robberTileId: 3, dice: [2, 5],
-    log: [], pending: null, tradeOffers: [],
+    board: null,
+    robberTileId: 3,
+    dice: [2, 5],
+    log: [],
+    pending: null,
+    tradeOffers: [],
     bank: { wood: 19, brick: 19, wheat: 19, sheep: 19, ore: 19 },
   };
 
@@ -625,18 +651,32 @@ test("publicGameState strips resources and devCards from players", () => {
 
 test("publicGameState preserves settlement/city/road data", () => {
   const game = {
-    gameId: "X", phase: "playing", turnNumber: 1, currentPlayerIndex: 0,
+    gameId: "X",
+    phase: "playing",
+    turnNumber: 1,
+    currentPlayerIndex: 0,
     players: [
       {
-        id: "a", name: "P1", color: "#111",
-        resources: emptyResources(), devCards: [],
-        roads: [5, 6], settlements: [10, 11], cities: [20],
-        knightsPlayed: 2, hasLongestRoad: true, hasLargestArmy: false,
+        id: "a",
+        name: "P1",
+        color: "#111",
+        resources: emptyResources(),
+        devCards: [],
+        roads: [5, 6],
+        settlements: [10, 11],
+        cities: [20],
+        knightsPlayed: 2,
+        hasLongestRoad: true,
+        hasLargestArmy: false,
         connected: false,
       },
     ],
-    board: null, robberTileId: 0, dice: null,
-    log: [], pending: null, tradeOffers: [],
+    board: null,
+    robberTileId: 0,
+    dice: null,
+    log: [],
+    pending: null,
+    tradeOffers: [],
     bank: { wood: 10, brick: 10, wheat: 10, sheep: 10, ore: 10 },
   };
 

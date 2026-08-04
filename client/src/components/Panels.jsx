@@ -4,13 +4,24 @@ import { publicScore, totalResources, playerPortRate } from "../game/helpers.js"
 
 export function SuggestionsPanel({ suggestions }) {
   if (!suggestions || suggestions.length === 0) return null;
-  const colorFor = (kind) => (kind === "can" ? "#2f6b3a" : kind === "need" ? "#7a5a1e" : styles.card.color);
+  const colorFor = (kind) =>
+    kind === "can" ? "#2f6b3a" : kind === "need" ? "#7a5a1e" : styles.card.color;
   return (
     <div style={styles.card}>
       <div style={styles.cardTitle}>چیکار می‌تونم بکنم؟</div>
       {suggestions.map((s, i) => (
-        <div key={i} style={{ fontSize: 13, padding: "3px 0", color: colorFor(s.kind), direction: "rtl", textAlign: "right" }}>
-          {s.kind === "can" ? "✅ " : s.kind === "need" ? "• " : "ℹ️ "}{s.text}
+        <div
+          key={i}
+          style={{
+            fontSize: 13,
+            padding: "3px 0",
+            color: colorFor(s.kind),
+            direction: "rtl",
+            textAlign: "right",
+          }}
+        >
+          {s.kind === "can" ? "✅ " : s.kind === "need" ? "• " : "ℹ️ "}
+          {s.text}
         </div>
       ))}
     </div>
@@ -22,12 +33,26 @@ export function PlayersPanel({ game, me, myPlayer }) {
     <div style={styles.card}>
       <div style={styles.cardTitle}>بازیکن‌ها</div>
       {game.players.map((p, i) => (
-        <div key={p.id} style={{ ...styles.playerCard, borderColor: p.color, opacity: i === game.currentPlayerIndex && game.phase !== "lobby" ? 1 : 0.75 }}>
+        <div
+          key={p.id}
+          style={{
+            ...styles.playerCard,
+            borderColor: p.color,
+            opacity: i === game.currentPlayerIndex && game.phase !== "lobby" ? 1 : 0.75,
+          }}
+        >
           <div style={{ ...styles.playerDot, background: p.color }} />
           <div style={styles.playerCardBody}>
-            <div style={styles.playerCardName}>{p.name}{p.id === me.playerId ? " (شما)" : ""}</div>
+            <div style={styles.playerCardName}>
+              {p.name}
+              {p.id === me.playerId ? " (شما)" : ""}
+            </div>
             <div style={{ ...styles.playerCardMeta, direction: "rtl", textAlign: "right" }}>
-              امتیاز: {publicScore(p)}{p.id === me.playerId && myPlayer ? ` (+${myPlayer.devCards.filter((c) => c.type === "victory").length} مخفی)` : ""} · جاده: {p.roads.length} · کارت: {p.resourceCount}
+              امتیاز: {publicScore(p)}
+              {p.id === me.playerId && myPlayer
+                ? ` (+${myPlayer.devCards.filter((c) => c.type === "victory").length} مخفی)`
+                : ""}{" "}
+              · جاده: {p.roads.length} · کارت: {p.resourceCount}
               {p.hasLongestRoad && " · 🛣️ طولانی‌ترین جاده"}
               {p.hasLargestArmy && " · ⚔️ بزرگ‌ترین ارتش"}
               {p.connected === false && " · ⚠️ قطع شده"}
@@ -47,15 +72,31 @@ export function DiscardModal({ player, picks, setPicks, onSubmit }) {
       <div style={styles.cardTitle}>{needed} کارت دور بریز</div>
       {RESOURCE_TYPES.map((r) => (
         <div key={r} style={styles.discardRow}>
-          <span>{RES_LABEL[r]} (داری: {player.resources[r]})</span>
+          <span>
+            {RES_LABEL[r]} (داری: {player.resources[r]})
+          </span>
           <div style={styles.stepper}>
-            <button style={styles.miniBtn} onClick={() => setPicks({ ...picks, [r]: Math.max(0, picks[r] - 1) })}>-</button>
+            <button
+              style={styles.miniBtn}
+              onClick={() => setPicks({ ...picks, [r]: Math.max(0, picks[r] - 1) })}
+            >
+              -
+            </button>
             <span>{picks[r]}</span>
-            <button style={styles.miniBtn} onClick={() => setPicks({ ...picks, [r]: Math.min(player.resources[r], picks[r] + 1) })}>+</button>
+            <button
+              style={styles.miniBtn}
+              onClick={() =>
+                setPicks({ ...picks, [r]: Math.min(player.resources[r], picks[r] + 1) })
+              }
+            >
+              +
+            </button>
           </div>
         </div>
       ))}
-      <button style={styles.primaryBtn} disabled={chosen !== needed} onClick={onSubmit}>دور انداختن {chosen}/{needed}</button>
+      <button style={styles.primaryBtn} disabled={chosen !== needed} onClick={onSubmit}>
+        دور انداختن {chosen}/{needed}
+      </button>
     </div>
   );
 }
@@ -69,15 +110,27 @@ export function YearOfPlentyModal({ picks, setPicks, onSubmit }) {
       <div style={styles.cardTitle}>سال فراوانی — ۲ تا انتخاب کن</div>
       <div style={styles.resRow}>
         {RESOURCE_TYPES.map((r) => (
-          <button key={r} style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }} onClick={() => toggle(r)}>
+          <button
+            key={r}
+            style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }}
+            onClick={() => toggle(r)}
+          >
             {RES_LABEL[r]}
           </button>
         ))}
       </div>
       <p style={styles.hint}>انتخاب‌شده: {picks.map((p) => RES_LABEL[p]).join("، ") || "هیچی"}</p>
       <div style={{ display: "flex", gap: 8 }}>
-        <button style={styles.secondaryBtn} onClick={() => setPicks([])}>ریست</button>
-        <button style={styles.primaryBtn} disabled={picks.length !== 2} onClick={() => onSubmit(picks)}>تأیید</button>
+        <button style={styles.secondaryBtn} onClick={() => setPicks([])}>
+          ریست
+        </button>
+        <button
+          style={styles.primaryBtn}
+          disabled={picks.length !== 2}
+          onClick={() => onSubmit(picks)}
+        >
+          تأیید
+        </button>
       </div>
     </div>
   );
@@ -89,7 +142,11 @@ export function MonopolyModal({ onSubmit }) {
       <div style={styles.cardTitle}>انحصار — یه منبع انتخاب کن</div>
       <div style={styles.resRow}>
         {RESOURCE_TYPES.map((r) => (
-          <button key={r} style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }} onClick={() => onSubmit(r)}>
+          <button
+            key={r}
+            style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }}
+            onClick={() => onSubmit(r)}
+          >
             {RES_LABEL[r]}
           </button>
         ))}
@@ -98,23 +155,49 @@ export function MonopolyModal({ onSubmit }) {
   );
 }
 
-export function TradePanel({ myPlayer, board, onBankTrade, tradeGive, setTradeGive, tradeWant, setTradeWant, onProposeTrade, hasOpenOffer }) {
+export function TradePanel({
+  myPlayer,
+  board,
+  onBankTrade,
+  tradeGive,
+  setTradeGive,
+  tradeWant,
+  setTradeWant,
+  onProposeTrade,
+  hasOpenOffer,
+}) {
   const rate = tradeGive ? playerPortRate(board, myPlayer, tradeGive) : 4;
   return (
     <div>
       <div style={styles.tradeRow}>
         <div style={{ flex: 1 }}>
           <div style={styles.hint}>می‌دی</div>
-          <select style={styles.select} value={tradeGive || ""} onChange={(e) => setTradeGive(e.target.value || null)}>
+          <select
+            style={styles.select}
+            value={tradeGive || ""}
+            onChange={(e) => setTradeGive(e.target.value || null)}
+          >
             <option value="">—</option>
-            {RESOURCE_TYPES.map((r) => <option key={r} value={r}>{RES_LABEL[r]} ({myPlayer.resources[r]})</option>)}
+            {RESOURCE_TYPES.map((r) => (
+              <option key={r} value={r}>
+                {RES_LABEL[r]} ({myPlayer.resources[r]})
+              </option>
+            ))}
           </select>
         </div>
         <div style={{ flex: 1 }}>
           <div style={styles.hint}>می‌خوای</div>
-          <select style={styles.select} value={tradeWant || ""} onChange={(e) => setTradeWant(e.target.value || null)}>
+          <select
+            style={styles.select}
+            value={tradeWant || ""}
+            onChange={(e) => setTradeWant(e.target.value || null)}
+          >
             <option value="">—</option>
-            {RESOURCE_TYPES.map((r) => <option key={r} value={r}>{RES_LABEL[r]}</option>)}
+            {RESOURCE_TYPES.map((r) => (
+              <option key={r} value={r}>
+                {RES_LABEL[r]}
+              </option>
+            ))}
           </select>
         </div>
       </div>

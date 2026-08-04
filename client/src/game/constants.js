@@ -13,7 +13,14 @@ export const RES_COLOR = {
   ore: "#6b6f76",
   desert: "#d9c896",
 };
-export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
+export const RES_LABEL = {
+  wood: "چوب",
+  brick: "آجر",
+  wheat: "گندم",
+  sheep: "پشم",
+  ore: "سنگ‌معدن",
+  desert: "کویر",
+};
 export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
 // Only 4 of our 6 player colors currently have matching hand-made piece art
@@ -25,13 +32,8 @@ export const COLOR_ASSET_NAME = {
   "#3f7d4a": "green",
 };
 
-export const BUILD_COST = {
-  road: { brick: 1, wood: 1 },
-  settlement: { brick: 1, wood: 1, wheat: 1, sheep: 1 },
-  city: { wheat: 2, ore: 3 },
-  devCard: { wheat: 1, sheep: 1, ore: 1 },
-};
-export const RESOURCE_TYPES = ["wood", "brick", "wheat", "sheep", "ore"];
+import { BUILD_COST, RESOURCE_TYPES } from "../../../shared/game-constants.mjs";
+export { BUILD_COST, RESOURCE_TYPES };
 export const DEV_LABEL = {
   knight: "شوالیه",
   victory: "امتیاز پیروزی",
@@ -39,4 +41,3 @@ export const DEV_LABEL = {
   yearOfPlenty: "سال فراوانی",
   monopoly: "انحصار",
 };
-

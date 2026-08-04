@@ -1,26 +1,51 @@
 import { useState, useEffect, useMemo } from "react";
-import { Copy, Check, Dice5, Home, Building2, Milestone, Users, Sparkles, ScrollText } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Dice5,
+  Home,
+  Building2,
+  Milestone,
+  Users,
+  Sparkles,
+  ScrollText,
+} from "lucide-react";
 import { socket, SERVER_URL } from "./socket.js";
 import { styles } from "./styles.js";
 import { PARCHMENT, RES_COLOR, RES_LABEL, RESOURCE_TYPES, DEV_LABEL } from "./game/constants.js";
 import { emptyResources, getSuggestions } from "./game/helpers.js";
 import BoardSVG from "./components/BoardSVG.jsx";
 import { ResourceIcon } from "./components/ResourceGlyphs.jsx";
-import { PlayersPanel, DiscardModal, YearOfPlentyModal, MonopolyModal, TradePanel, SuggestionsPanel } from "./components/Panels.jsx";
+import {
+  PlayersPanel,
+  DiscardModal,
+  YearOfPlentyModal,
+  MonopolyModal,
+  TradePanel,
+  SuggestionsPanel,
+} from "./components/Panels.jsx";
 
 function saveSession(roomId, playerId, playerName) {
   try {
     localStorage.setItem("catan-session", JSON.stringify({ roomId, playerId, playerName }));
-  } catch (e) { /* ignore (private browsing etc.) */ }
+  } catch (e) {
+    /* ignore (private browsing etc.) */
+  }
 }
 function loadSession() {
   try {
     const raw = localStorage.getItem("catan-session");
     return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 }
 function clearSession() {
-  try { localStorage.removeItem("catan-session"); } catch (e) { /* ignore */ }
+  try {
+    localStorage.removeItem("catan-session");
+  } catch (e) {
+    /* ignore */
+  }
 }
 
 function currentSetupPlayerId(g) {
@@ -49,7 +74,10 @@ export default function App() {
     const timer = window.setTimeout(() => {
       if (settled) return;
       settled = true;
-      onResult({ ok: false, error: "اتصال به سرور پاسخ نداد. آدرس سرور و وضعیت deploy را بررسی کن." });
+      onResult({
+        ok: false,
+        error: "اتصال به سرور پاسخ نداد. آدرس سرور و وضعیت deploy را بررسی کن.",
+      });
     }, 10000);
     socket.emit(event, payload, (result) => {
       if (settled) return;
@@ -120,7 +148,11 @@ export default function App() {
     return { ...base, resources: myPrivate.resources, devCards: myPrivate.devCards };
   }, [game, me, myPrivate]);
 
-  const isMyTurn = !!(game && myPlayer && game.players[game.currentPlayerIndex]?.id === myPlayer.id);
+  const isMyTurn = !!(
+    game &&
+    myPlayer &&
+    game.players[game.currentPlayerIndex]?.id === myPlayer.id
+  );
 
   function act(event, payload = {}) {
     emitWithTimeout(event, payload, (res) => {
@@ -147,13 +179,20 @@ export default function App() {
   function handleJoin() {
     if (!nameInput.trim() || !joinInput.trim()) return;
     setActionError("");
-    emitWithTimeout("joinRoom", { roomId: joinInput.trim().toUpperCase(), playerName: nameInput.trim() }, (res) => {
-      if (!res || res.ok === false) { setActionError(res?.error || "ورود به روم انجام نشد."); return; }
-      setMe({ playerId: res.playerId });
-      setGame(res.room);
-      setScreen("lobby");
-      saveSession(res.room.gameId, res.playerId, nameInput.trim());
-    });
+    emitWithTimeout(
+      "joinRoom",
+      { roomId: joinInput.trim().toUpperCase(), playerName: nameInput.trim() },
+      (res) => {
+        if (!res || res.ok === false) {
+          setActionError(res?.error || "ورود به روم انجام نشد.");
+          return;
+        }
+        setMe({ playerId: res.playerId });
+        setGame(res.room);
+        setScreen("lobby");
+        saveSession(res.room.gameId, res.playerId, nameInput.trim());
+      },
+    );
   }
 
   function onVertexClick(vertexId) {
@@ -177,7 +216,8 @@ export default function App() {
       return;
     }
     if (buildMode === "road") act("buildRoad", { edgeId });
-    if (!(game.pending?.type === "roadBuildingFree" && game.pending.remaining > 1)) setBuildMode(null);
+    if (!(game.pending?.type === "roadBuildingFree" && game.pending.remaining > 1))
+      setBuildMode(null);
   }
   function onTileClick(tileId) {
     if (!game) return;
@@ -196,18 +236,36 @@ export default function App() {
         <div style={styles.homeCard}>
           <div style={styles.compass}>⛵</div>
           <h1 style={styles.title}>کاتان</h1>
-          <p style={styles.subtitle}>جزیره رو مستعمره کن. عاقلانه معامله کن. امپراتوری‌ت رو بساز.</p>
-          <input style={styles.input} placeholder="اسم شما" value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)} maxLength={16} />
+          <p style={styles.subtitle}>
+            جزیره رو مستعمره کن. عاقلانه معامله کن. امپراتوری‌ت رو بساز.
+          </p>
+          <input
+            style={styles.input}
+            placeholder="اسم شما"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            maxLength={16}
+          />
           <button style={styles.primaryBtn} onClick={handleCreate} disabled={!nameInput.trim()}>
             ساخت روم جدید
           </button>
           <div style={styles.dividerRow}>
-            <div style={styles.hr} /><span style={styles.dividerText}>یا بپیوند</span><div style={styles.hr} />
+            <div style={styles.hr} />
+            <span style={styles.dividerText}>یا بپیوند</span>
+            <div style={styles.hr} />
           </div>
-          <input style={styles.input} placeholder="کد بازی" value={joinInput}
-            onChange={(e) => setJoinInput(e.target.value.toUpperCase())} maxLength={5} />
-          <button style={styles.secondaryBtn} onClick={handleJoin} disabled={!nameInput.trim() || !joinInput.trim()}>
+          <input
+            style={styles.input}
+            placeholder="کد بازی"
+            value={joinInput}
+            onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
+            maxLength={5}
+          />
+          <button
+            style={styles.secondaryBtn}
+            onClick={handleJoin}
+            disabled={!nameInput.trim() || !joinInput.trim()}
+          >
             ورود به بازی
           </button>
           {(connectionError || actionError) && (
@@ -232,11 +290,14 @@ export default function App() {
           <h1 style={styles.title}>اتاق انتظار</h1>
           <div style={styles.codeRow}>
             <span style={styles.codeText}>{game.gameId}</span>
-            <button style={styles.iconBtn} onClick={() => {
-              navigator.clipboard?.writeText(game.gameId);
-              setCopyOk(true);
-              setTimeout(() => setCopyOk(false), 1500);
-            }}>
+            <button
+              style={styles.iconBtn}
+              onClick={() => {
+                navigator.clipboard?.writeText(game.gameId);
+                setCopyOk(true);
+                setTimeout(() => setCopyOk(false), 1500);
+              }}
+            >
               {copyOk ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
@@ -245,12 +306,20 @@ export default function App() {
             {game.players.map((p, i) => (
               <div key={p.id} style={styles.playerRow}>
                 <Users size={16} />
-                <span>{p.name}{p.id === me.playerId ? " (شما)" : ""}{i === 0 ? " · میزبان" : ""}</span>
+                <span>
+                  {p.name}
+                  {p.id === me.playerId ? " (شما)" : ""}
+                  {i === 0 ? " · میزبان" : ""}
+                </span>
               </div>
             ))}
           </div>
           {game.players[0]?.id === me.playerId ? (
-            <button style={styles.primaryBtn} onClick={() => act("startGame")} disabled={game.players.length < 2}>
+            <button
+              style={styles.primaryBtn}
+              onClick={() => act("startGame")}
+              disabled={game.players.length < 2}
+            >
               {game.players.length < 2 ? "در انتظار بازیکنای بیشتر…" : "شروع بازی ⛵"}
             </button>
           ) : (
@@ -274,10 +343,15 @@ export default function App() {
   return (
     <div style={styles.gameWrap}>
       <div style={styles.topBar}>
-        <div style={styles.topBarTitle}>⛵ کاتان <span style={styles.topBarCode}>#{game.gameId}</span></div>
+        <div style={styles.topBarTitle}>
+          ⛵ کاتان <span style={styles.topBarCode}>#{game.gameId}</span>
+        </div>
         <button
           style={{ ...styles.iconBtn, fontSize: 11, padding: "4px 10px" }}
-          onClick={() => { clearSession(); window.location.reload(); }}
+          onClick={() => {
+            clearSession();
+            window.location.reload();
+          }}
         >
           خروج
         </button>
@@ -285,8 +359,8 @@ export default function App() {
           {game.phase === "ended"
             ? `🏆 ${game.players.find((p) => p.id === game.winnerId)?.name} برنده شد!`
             : game.phase === "setup"
-            ? `چیدمان اولیه — ${game.players.find((p) => p.id === setupPid)?.name} داره یه ${game.setupSubPhase === "settlement" ? "روستا" : "جاده"} می‌ذاره`
-            : `نوبت ${activePlayer.name} ${isMyTurn ? "(شما)" : ""}`}
+              ? `چیدمان اولیه — ${game.players.find((p) => p.id === setupPid)?.name} داره یه ${game.setupSubPhase === "settlement" ? "روستا" : "جاده"} می‌ذاره`
+              : `نوبت ${activePlayer.name} ${isMyTurn ? "(شما)" : ""}`}
         </div>
       </div>
 
@@ -319,7 +393,14 @@ export default function App() {
               <div style={styles.resRow}>
                 {RESOURCE_TYPES.map((r) => (
                   <div key={r} style={{ ...styles.resChip, background: RES_COLOR[r] }}>
-                    <div style={{ background: "#fff", borderRadius: "50%", padding: 2, marginBottom: 2 }}>
+                    <div
+                      style={{
+                        background: "#fff",
+                        borderRadius: "50%",
+                        padding: 2,
+                        marginBottom: 2,
+                      }}
+                    >
                       <ResourceIcon resource={r} size={16} />
                     </div>
                     <span>{RES_LABEL[r]}</span>
@@ -332,9 +413,19 @@ export default function App() {
                   {myPlayer.devCards.map((c) => (
                     <div key={c.id} style={styles.devChip}>
                       {DEV_LABEL[c.type]}
-                      {c.type !== "victory" && isMyTurn && game.phase === "playing" && !game.hasPlayedDevCardThisTurn && !game.pending && c.boughtTurn !== game.turnNumber && (
-                        <button style={styles.miniBtn} onClick={() => act("playDevCard", { cardId: c.id, type: c.type })}>بازی کن</button>
-                      )}
+                      {c.type !== "victory" &&
+                        isMyTurn &&
+                        game.phase === "playing" &&
+                        !game.hasPlayedDevCardThisTurn &&
+                        !game.pending &&
+                        c.boughtTurn !== game.turnNumber && (
+                          <button
+                            style={styles.miniBtn}
+                            onClick={() => act("playDevCard", { cardId: c.id, type: c.type })}
+                          >
+                            بازی کن
+                          </button>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -349,18 +440,28 @@ export default function App() {
               <div style={styles.cardTitle}>اقدامات</div>
               {!game.dice ? (
                 <button style={styles.primaryBtn} onClick={() => act("rollDice")}>
-                  <Dice5 size={16} style={{ marginRight: 6 }} />پرتاب تاس
+                  <Dice5 size={16} style={{ marginRight: 6 }} />
+                  پرتاب تاس
                 </button>
               ) : (
                 <>
                   <div style={styles.actionGrid}>
-                    <button style={buildMode === "road" ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setBuildMode(buildMode === "road" ? null : "road")}>
+                    <button
+                      style={buildMode === "road" ? styles.toggleBtnActive : styles.toggleBtn}
+                      onClick={() => setBuildMode(buildMode === "road" ? null : "road")}
+                    >
                       <Milestone size={14} /> جاده (1🌲1🧱)
                     </button>
-                    <button style={buildMode === "settlement" ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setBuildMode(buildMode === "settlement" ? null : "settlement")}>
+                    <button
+                      style={buildMode === "settlement" ? styles.toggleBtnActive : styles.toggleBtn}
+                      onClick={() => setBuildMode(buildMode === "settlement" ? null : "settlement")}
+                    >
                       <Home size={14} /> روستا
                     </button>
-                    <button style={buildMode === "city" ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setBuildMode(buildMode === "city" ? null : "city")}>
+                    <button
+                      style={buildMode === "city" ? styles.toggleBtnActive : styles.toggleBtn}
+                      onClick={() => setBuildMode(buildMode === "city" ? null : "city")}
+                    >
                       <Building2 size={14} /> شهر
                     </button>
                     <button style={styles.toggleBtn} onClick={() => act("buyDevCard")}>
@@ -368,7 +469,9 @@ export default function App() {
                     </button>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button style={styles.secondaryBtn} onClick={() => act("endTurn")}>پایان نوبت</button>
+                    <button style={styles.secondaryBtn} onClick={() => act("endTurn")}>
+                      پایان نوبت
+                    </button>
                     <button
                       style={{ ...styles.secondaryBtn, opacity: game.turnCheckpoint ? 1 : 0.4 }}
                       disabled={!game.turnCheckpoint}
@@ -388,19 +491,33 @@ export default function App() {
               player={myPlayer}
               picks={discardPicks}
               setPicks={setDiscardPicks}
-              onSubmit={() => { act("submitDiscard", { picks: discardPicks }); setDiscardPicks(emptyResources()); }}
+              onSubmit={() => {
+                act("submitDiscard", { picks: discardPicks });
+                setDiscardPicks(emptyResources());
+              }}
             />
           )}
 
           {game.pending?.type === "robberMove" && isMyTurn && (
-            <div style={styles.card}><div style={styles.cardTitle}>راهزن رو جابه‌جا کن</div><p style={styles.hint}>یه خونه از تخته رو انتخاب کن.</p></div>
+            <div style={styles.card}>
+              <div style={styles.cardTitle}>راهزن رو جابه‌جا کن</div>
+              <p style={styles.hint}>یه خونه از تخته رو انتخاب کن.</p>
+            </div>
           )}
           {game.pending?.type === "robberSteal" && isMyTurn && (
             <div style={styles.card}>
               <div style={styles.cardTitle}>از کی بدزدم؟</div>
               {game.pending.victims.map((vid) => {
                 const v = game.players.find((p) => p.id === vid);
-                return <button key={vid} style={styles.secondaryBtn} onClick={() => act("stealFrom", { victimId: vid })}>{v.name}</button>;
+                return (
+                  <button
+                    key={vid}
+                    style={styles.secondaryBtn}
+                    onClick={() => act("stealFrom", { victimId: vid })}
+                  >
+                    {v.name}
+                  </button>
+                );
               })}
             </div>
           )}
@@ -408,7 +525,10 @@ export default function App() {
             <YearOfPlentyModal
               picks={yopPicks}
               setPicks={setYopPicks}
-              onSubmit={(picks) => { act("resolveYearOfPlenty", { picks }); setYopPicks([]); }}
+              onSubmit={(picks) => {
+                act("resolveYearOfPlenty", { picks });
+                setYopPicks([]);
+              }}
             />
           )}
           {game.pending?.type === "monopoly" && isMyTurn && (
@@ -418,7 +538,12 @@ export default function App() {
             <div style={styles.card}>
               <div style={styles.cardTitle}>جاده‌سازی</div>
               <p style={styles.hint}>{game.pending.remaining} جاده‌ی رایگان رو روی تخته بذار.</p>
-              <button style={buildMode === "road" ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setBuildMode("road")}>انتخاب جاده</button>
+              <button
+                style={buildMode === "road" ? styles.toggleBtnActive : styles.toggleBtn}
+                onClick={() => setBuildMode("road")}
+              >
+                انتخاب جاده
+              </button>
             </div>
           )}
 
@@ -433,26 +558,49 @@ export default function App() {
                 setTradeGive={setTradeGive}
                 tradeWant={tradeWant}
                 setTradeWant={setTradeWant}
-                onProposeTrade={() => { if (tradeGive && tradeWant) act("proposeTrade", { give: tradeGive, want: tradeWant }); setTradeGive(null); setTradeWant(null); }}
-                hasOpenOffer={game.tradeOffers.some((o) => o.status === "open" && o.from === me.playerId)}
+                onProposeTrade={() => {
+                  if (tradeGive && tradeWant)
+                    act("proposeTrade", { give: tradeGive, want: tradeWant });
+                  setTradeGive(null);
+                  setTradeWant(null);
+                }}
+                hasOpenOffer={game.tradeOffers.some(
+                  (o) => o.status === "open" && o.from === me.playerId,
+                )}
               />
             </div>
           )}
 
-          {game.tradeOffers.filter((o) => o.status === "open").map((offer) => {
-            const proposer = game.players.find((p) => p.id === offer.from);
-            return (
-              <div key={offer.id} style={styles.card}>
-                <div style={styles.cardTitle}>پیشنهاد معامله</div>
-                <p style={styles.hint}>{proposer.name} پیشنهاد می‌ده: {RES_LABEL[offer.give]} ← می‌خواد: {RES_LABEL[offer.want]}</p>
-                {offer.from !== me.playerId ? (
-                  <button style={styles.primaryBtn} onClick={() => act("acceptTrade", { offerId: offer.id })} disabled={myPlayer.resources[offer.want] < 1}>قبول</button>
-                ) : (
-                  <button style={styles.secondaryBtn} onClick={() => act("cancelTrade", { offerId: offer.id })}>لغو پیشنهاد</button>
-                )}
-              </div>
-            );
-          })}
+          {game.tradeOffers
+            .filter((o) => o.status === "open")
+            .map((offer) => {
+              const proposer = game.players.find((p) => p.id === offer.from);
+              return (
+                <div key={offer.id} style={styles.card}>
+                  <div style={styles.cardTitle}>پیشنهاد معامله</div>
+                  <p style={styles.hint}>
+                    {proposer.name} پیشنهاد می‌ده: {RES_LABEL[offer.give]} ← می‌خواد:{" "}
+                    {RES_LABEL[offer.want]}
+                  </p>
+                  {offer.from !== me.playerId ? (
+                    <button
+                      style={styles.primaryBtn}
+                      onClick={() => act("acceptTrade", { offerId: offer.id })}
+                      disabled={myPlayer.resources[offer.want] < 1}
+                    >
+                      قبول
+                    </button>
+                  ) : (
+                    <button
+                      style={styles.secondaryBtn}
+                      onClick={() => act("cancelTrade", { offerId: offer.id })}
+                    >
+                      لغو پیشنهاد
+                    </button>
+                  )}
+                </div>
+              );
+            })}
 
           {actionError && (
             <div style={{ ...styles.card, borderColor: "crimson" }}>
@@ -461,9 +609,19 @@ export default function App() {
           )}
 
           <div style={styles.card}>
-            <div style={styles.cardTitle}><ScrollText size={14} style={{ marginRight: 4 }} />رویدادها</div>
+            <div style={styles.cardTitle}>
+              <ScrollText size={14} style={{ marginRight: 4 }} />
+              رویدادها
+            </div>
             <div style={{ ...styles.logBox, direction: "rtl", textAlign: "right" }}>
-              {[...game.log].slice(-30).reverse().map((l, i) => <div key={i} style={styles.logLine}>{l}</div>)}
+              {[...game.log]
+                .slice(-30)
+                .reverse()
+                .map((l, i) => (
+                  <div key={i} style={styles.logLine}>
+                    {l}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

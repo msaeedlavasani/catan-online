@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   client:
-    name: Client lint, test, build
+    name: Client format, lint, test, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,17 +30,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Format check
+        run: npm run format:check
+
       - name: Lint
         run: npm run lint
 
       - name: Test
         run: npm test
 
+      - name: Shared contract test
+        working-directory: .
+        run: node --test shared/game-constants.test.mjs
+
       - name: Build
         run: npm run build
 
   server:
-    name: Server lint, test, syntax
+    name: Server format, lint, test, syntax
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,6 +65,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint

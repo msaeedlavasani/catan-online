@@ -1,15 +1,10 @@
 import crypto from "node:crypto";
 
+import { BUILD_COST, RESOURCE_TYPES } from "../../../shared/game-constants.mjs";
+export { BUILD_COST, RESOURCE_TYPES };
+
 export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
 export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
-
-export const BUILD_COST = {
-  road: { brick: 1, wood: 1 },
-  settlement: { brick: 1, wood: 1, wheat: 1, sheep: 1 },
-  city: { wheat: 2, ore: 3 },
-  devCard: { wheat: 1, sheep: 1, ore: 1 },
-};
-export const RESOURCE_TYPES = ["wood", "brick", "wheat", "sheep", "ore"];
 
 /* ============================== BOARD MATH ============================== */
 export function axialHexes(radius) {

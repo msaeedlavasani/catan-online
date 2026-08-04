@@ -1,0 +1,7 @@
+node_modules/
+
+# Engine / rooms / config — protected from formatting
+src/config.js
+src/rooms.js
+src/game/engine.js
+src/game/core.js

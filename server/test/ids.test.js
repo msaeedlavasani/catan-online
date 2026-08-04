@@ -114,7 +114,10 @@ test("no room code collision when creating many rooms", () => {
 test("newGameId does not call Math.random (uses crypto)", () => {
   const spy = Math.random;
   let called = false;
-  Math.random = () => { called = true; return 0.5; };
+  Math.random = () => {
+    called = true;
+    return 0.5;
+  };
   try {
     newGameId();
   } finally {
@@ -126,7 +129,10 @@ test("newGameId does not call Math.random (uses crypto)", () => {
 test("newId does not call Math.random (uses crypto)", () => {
   const spy = Math.random;
   let called = false;
-  Math.random = () => { called = true; return 0.5; };
+  Math.random = () => {
+    called = true;
+    return 0.5;
+  };
   try {
     newId();
   } finally {

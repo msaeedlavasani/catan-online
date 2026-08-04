@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getPort } from "../src/config.js";
+import { getPort, getRoomTTL } from "../src/config.js";
 
 // ─── Default / fallback ──────────────────────────────────────────────
 
@@ -76,4 +76,72 @@ test("getPort returns a number, not a string", () => {
   const port = getPort("8080");
   assert.equal(typeof port, "number");
   assert.equal(port, 8080);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// getRoomTTL
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Default / fallback ─────────────────────────────────────────────
+
+test("getRoomTTL returns 300000 (5 min) when ROOM_TTL_MS is unset", () => {
+  assert.equal(getRoomTTL(undefined), 300_000);
+});
+
+test("getRoomTTL returns 300000 when ROOM_TTL_MS is null", () => {
+  assert.equal(getRoomTTL(null), 300_000);
+});
+
+test("getRoomTTL returns 300000 when ROOM_TTL_MS is empty string", () => {
+  assert.equal(getRoomTTL(""), 300_000);
+});
+
+test("getRoomTTL returns 300000 when ROOM_TTL_MS is whitespace only", () => {
+  assert.equal(getRoomTTL("   "), 300_000);
+});
+
+// ─── Valid values ───────────────────────────────────────────────────
+
+test("getRoomTTL parses a valid numeric string (10 seconds)", () => {
+  assert.equal(getRoomTTL("10000"), 10_000);
+});
+
+test("getRoomTTL parses 1 hour", () => {
+  assert.equal(getRoomTTL("3600000"), 3_600_000);
+});
+
+test("getRoomTTL parses the minimum allowed (1000 ms)", () => {
+  assert.equal(getRoomTTL("1000"), 1_000);
+});
+
+test("getRoomTTL parses exactly the default", () => {
+  assert.equal(getRoomTTL("300000"), 300_000);
+});
+
+// ─── Invalid values — fall back to 300000 ───────────────────────────
+
+test("getRoomTTL falls back on non-numeric string", () => {
+  assert.equal(getRoomTTL("abc"), 300_000);
+});
+
+test("getRoomTTL falls back on float (not integer)", () => {
+  assert.equal(getRoomTTL("5000.5"), 300_000);
+});
+
+test("getRoomTTL falls back on zero", () => {
+  assert.equal(getRoomTTL("0"), 300_000);
+});
+
+test("getRoomTTL falls back on negative value", () => {
+  assert.equal(getRoomTTL("-5000"), 300_000);
+});
+
+test("getRoomTTL falls back on value < 1000 (500 ms)", () => {
+  assert.equal(getRoomTTL("500"), 300_000);
+});
+
+test("getRoomTTL returns a number, not a string", () => {
+  const ttl = getRoomTTL("60000");
+  assert.equal(typeof ttl, "number");
+  assert.equal(ttl, 60_000);
 });

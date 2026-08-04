@@ -30,9 +30,18 @@ export function BrickGlyph({ x, y, scale = 1 }) {
   function Cube({ cx, cy, s }) {
     return (
       <g stroke={outline} strokeWidth={0.5} strokeLinejoin="round">
-        <polygon points={`${cx},${cy - s} ${cx + s},${cy - s * 0.5} ${cx},${cy} ${cx - s},${cy - s * 0.5}`} fill={top} />
-        <polygon points={`${cx - s},${cy - s * 0.5} ${cx},${cy} ${cx},${cy + s} ${cx - s},${cy + s * 0.5}`} fill={left} />
-        <polygon points={`${cx + s},${cy - s * 0.5} ${cx},${cy} ${cx},${cy + s} ${cx + s},${cy + s * 0.5}`} fill={right} />
+        <polygon
+          points={`${cx},${cy - s} ${cx + s},${cy - s * 0.5} ${cx},${cy} ${cx - s},${cy - s * 0.5}`}
+          fill={top}
+        />
+        <polygon
+          points={`${cx - s},${cy - s * 0.5} ${cx},${cy} ${cx},${cy + s} ${cx - s},${cy + s * 0.5}`}
+          fill={left}
+        />
+        <polygon
+          points={`${cx + s},${cy - s * 0.5} ${cx},${cy} ${cx},${cy + s} ${cx + s},${cy + s * 0.5}`}
+          fill={right}
+        />
       </g>
     );
   }
@@ -56,8 +65,14 @@ export function WheatGlyph({ x, y, scale = 1 }) {
       <line x1="0" y1="-11" x2="0" y2="9" stroke={dark} strokeWidth={1} />
       {heads.map((dy, i) => (
         <g key={i}>
-          <polygon points={`0,${dy} -4.5,${dy - 2.3} -3,${dy - 3.3}`} fill={i % 2 === 0 ? light : RES_COLOR.wheat} />
-          <polygon points={`0,${dy} 4.5,${dy - 2.3} 3,${dy - 3.3}`} fill={i % 2 === 0 ? RES_COLOR.wheat : dark} />
+          <polygon
+            points={`0,${dy} -4.5,${dy - 2.3} -3,${dy - 3.3}`}
+            fill={i % 2 === 0 ? light : RES_COLOR.wheat}
+          />
+          <polygon
+            points={`0,${dy} 4.5,${dy - 2.3} 3,${dy - 3.3}`}
+            fill={i % 2 === 0 ? RES_COLOR.wheat : dark}
+          />
         </g>
       ))}
       <rect x="-3.4" y="7.5" width="6.8" height="2.2" rx="1" fill={band} />
@@ -128,8 +143,20 @@ export function AnchorGlyph({ x, y, scale = 1 }) {
       <circle cx="0" cy="-7.5" r="2" fill="none" stroke={c} strokeWidth="1.4" />
       <line x1="0" y1="-5.5" x2="0" y2="7" stroke={c} strokeWidth="1.4" />
       <line x1="-5.5" y1="-2" x2="5.5" y2="-2" stroke={c} strokeWidth="1.4" />
-      <path d="M-6,1 C-6,6 -2.5,8.5 0,9" stroke={c} strokeWidth="1.4" fill="none" strokeLinecap="round" />
-      <path d="M6,1 C6,6 2.5,8.5 0,9" stroke={c} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <path
+        d="M-6,1 C-6,6 -2.5,8.5 0,9"
+        stroke={c}
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6,1 C6,6 2.5,8.5 0,9"
+        stroke={c}
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
     </g>
   );
 }

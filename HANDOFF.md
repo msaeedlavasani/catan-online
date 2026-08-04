@@ -19,15 +19,15 @@
 | نصب dependencyها | در محیط بررسی موفق |
 | build کلاینت | موفق |
 | اجرای server syntax check | موفق |
-| تست خودکار | ۱۴۸ تست server و ۷ تست client؛ پوشش کامل end-to-end باقی است |
-| lint/format | ESLint فعال؛ formatter هنوز باقی است |
-| CI | GitHub Actions برای lint/test/build/syntax اضافه شده |
+| تست خودکار | ۲۰۴ تست server و ۷ تست client؛ پوشش کامل end-to-end باقی است |
+| lint/format | ESLint و Prettier format check فعال؛ formatter هنوز auto-format workflow ندارد |
+| CI | GitHub Actions برای format/lint/test/build/syntax و shared contract test فعال است |
 | persistence | وجود ندارد؛ state در memory است |
 | احراز هویت | وجود ندارد |
 | CORS production-safe | allowlist با `CLIENT_ORIGIN` فعال است |
 | ظرفیت فعلی روم | ۲ تا ۴ نفر |
 | IDهای روم/بازیکن | crypto-random؛ کد روم collision-aware و player UUID v4 |
-| عملیات سرور | PORT validation، health metadata و graceful shutdown فعال |
+| عملیات سرور | PORT validation، TTL روم، health/live/ready و graceful shutdown فعال |
 
 ## ۳. معماری فعلی
 
@@ -46,9 +46,10 @@
 
 `server/src/index.js` مسئول HTTP، health check، graceful shutdown و event handlerهای Socket.io است. `server/src/config.js` مقدار `PORT` را validate می‌کند. تست‌های lifecycle در `server/test/health.test.js`, `server/test/shutdown.test.js` و `server/test/rooms.test.js` قرار دارند.
 
-- `rooms.js`: نگهداری روم‌ها در `Map` و مدیریت create/join/reconnect/disconnect.
+- `rooms.js`: نگهداری روم‌ها در `Map` و مدیریت create/join/reconnect/disconnect؛ lobby خالی فوراً cleanup می‌شود و روم in-game پس از قطع همه تا `ROOM_TTL_MS` برای reconnect باقی می‌ماند.
 - `game/core.js`: مدل state، ساخت هندسه‌ی تخته، منابع، امتیاز و state عمومی.
 - `game/engine.js`: منطق server-authoritative برای setup، تاس، راهزن، ساخت‌وساز، معامله، کارت توسعه و پایان نوبت.
+- `shared/game-constants.mjs`: source of truth برای `RESOURCE_TYPES` و `BUILD_COST` که توسط client و server مصرف می‌شود.
 
 هر اکشن از Socket.io به engine می‌رسد و در صورت موفقیت state به روم broadcast می‌شود.
 
@@ -105,7 +106,7 @@ node --check src/game/core.js
 node --check src/game/engine.js
 ```
 
-در وضعیت فعلی `npm test` و `npm run lint` در هر دو package تعریف شده‌اند. تست‌های client، CORS و validation اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها، از جمله eventهای بدون payload مثل `buyDevCard`، را قبل از رسیدن به engine بررسی می‌کند و handlerها خطا را با ack استاندارد برمی‌گردانند. پوشش کامل قوانین بازی همچنان با `ISS-006` دنبال می‌شود.
+در وضعیت فعلی `npm test`, `npm run lint` و `npm run format:check` در هر دو package تعریف شده‌اند. تست‌های client، CORS، validation، core، engine، room lifecycle و health اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها را قبل از رسیدن به engine بررسی می‌کند. قرارداد مشترک `RESOURCE_TYPES` و `BUILD_COST` در `shared/game-constants.mjs` تست می‌شود. پوشش کامل قوانین end-to-end همچنان با `ISS-006` دنبال می‌شود.
 
 ## ۶. ریسک‌های مهم
 

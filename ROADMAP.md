@@ -18,15 +18,15 @@
 - [x] تست unit برای قوانین اصلی بازی
 - [ ] تست چندبازیکنه‌ی end-to-end
 - [ ] تعیین نهایی ظرفیت رسمی بازیکن‌ها و assetها
-- [x] تثبیت authorization pending actionها؛ قرارداد undo هنوز باز است
+- [x] تثبیت authorization pending actionها و قرارداد اصلی undo
 
 ## ⬜ اسپرینت ۲ — پایداری و UX
-- [ ] reconnect با lifecycle و TTL مشخص
-- [x] cleanup روم‌های خالی در lobby و تست lifecycle روم
+- [ ] reconnect با session/TTL کامل و persistence
+- [x] cleanup روم‌های خالی در lobby و TTL روم‌های in-game
 - [ ] ریسپانسیو موبایل
 - [ ] دسترس‌پذیری و keyboard navigation
 - [ ] رفع باگ‌های گزارش‌شده
-- [ ] lint/format و CI
+- [x] lint/format و CI
 
 ## ⬜ اسپرینت ۳ — اکانتینگ
 - [ ] ثبت‌نام / ورود (JWT یا session)

@@ -20,7 +20,8 @@ function requireObject(payload) {
 }
 
 function requireNonEmptyString(value, field, maxLength = 128) {
-  if (typeof value !== "string" || value.trim().length === 0) return `${field} must be a non-empty string.`;
+  if (typeof value !== "string" || value.trim().length === 0)
+    return `${field} must be a non-empty string.`;
   if (value.trim().length > maxLength) return `${field} is too long.`;
   return null;
 }
@@ -36,7 +37,8 @@ function validateResource(value, field) {
 
 function validatePicks(picks, { array = false } = {}) {
   if (array) {
-    if (!Array.isArray(picks) || picks.length !== 2) return "picks must contain exactly two resources.";
+    if (!Array.isArray(picks) || picks.length !== 2)
+      return "picks must contain exactly two resources.";
     for (const resource of picks) {
       const error = validateResource(resource, "picks");
       if (error) return error;
@@ -47,7 +49,8 @@ function validatePicks(picks, { array = false } = {}) {
   if (!isPlainObject(picks)) return "picks must be an object.";
   for (const [resource, amount] of Object.entries(picks)) {
     if (!RESOURCE_TYPES.includes(resource)) return "picks contains an invalid resource.";
-    if (!Number.isInteger(amount) || amount < 0) return "resource picks must be non-negative integers.";
+    if (!Number.isInteger(amount) || amount < 0)
+      return "resource picks must be non-negative integers.";
   }
   return null;
 }
@@ -66,7 +69,8 @@ export function validatePayload(event, payload) {
   const data = payload ?? {};
   let error;
 
-  if (["startGame", "rollDice", "buyDevCard", "endTurn", "undoTurnActions"].includes(event)) return ok({});
+  if (["startGame", "rollDice", "buyDevCard", "endTurn", "undoTurnActions"].includes(event))
+    return ok({});
 
   if (["createRoom", "joinRoom"].includes(event)) {
     error = requireNonEmptyString(data.playerName, "playerName", 16);
@@ -75,12 +79,20 @@ export function validatePayload(event, payload) {
       error = requireNonEmptyString(data.roomId, "roomId", 5);
       if (error) return fail(error);
     }
-    return ok({ ...data, playerName: data.playerName.trim(), roomId: data.roomId?.trim().toUpperCase() });
+    return ok({
+      ...data,
+      playerName: data.playerName.trim(),
+      roomId: data.roomId?.trim().toUpperCase(),
+    });
   }
 
   if (event === "rejoinRoom") {
-    error = requireNonEmptyString(data.roomId, "roomId", 5) || requireNonEmptyString(data.playerId, "playerId", 128);
-    return error ? fail(error) : ok({ ...data, roomId: data.roomId.trim().toUpperCase(), playerId: data.playerId.trim() });
+    error =
+      requireNonEmptyString(data.roomId, "roomId", 5) ||
+      requireNonEmptyString(data.playerId, "playerId", 128);
+    return error
+      ? fail(error)
+      : ok({ ...data, roomId: data.roomId.trim().toUpperCase(), playerId: data.playerId.trim() });
   }
 
   if (event === "requestRoomState") {
@@ -110,7 +122,9 @@ export function validatePayload(event, payload) {
     return error ? fail(error) : ok(data);
   }
   if (event === "playDevCard") {
-    error = requireNonEmptyString(data.cardId, "cardId") || (CARD_TYPES.includes(data.type) ? null : "type must be a valid development card.");
+    error =
+      requireNonEmptyString(data.cardId, "cardId") ||
+      (CARD_TYPES.includes(data.type) ? null : "type must be a valid development card.");
     return error ? fail(error) : ok(data);
   }
   if (event === "resolveYearOfPlenty") {

@@ -7,10 +7,10 @@ test("uses localhost as the default development origin", () => {
 });
 
 test("parses a comma-separated origin allowlist", () => {
-  assert.deepEqual(
-    getAllowedOrigins("https://game.example, https://admin.example"),
-    ["https://game.example", "https://admin.example"],
-  );
+  assert.deepEqual(getAllowedOrigins("https://game.example, https://admin.example"), [
+    "https://game.example",
+    "https://admin.example",
+  ]);
 });
 
 test("allows configured origins and rejects unknown origins", () => {

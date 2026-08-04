@@ -9,7 +9,7 @@
 - ظرفیت فعلی روم: **۲ تا ۴ بازیکن**؛ فقط چهار رنگ فعلی asset کامل دارند.
 - نگهداری روم‌ها: حافظه‌ی سرور؛ با restart شدن سرور بازی‌ها از بین می‌روند.
 - احراز هویت و حساب کاربری: وجود ندارد.
-- lint و تست‌های خودکار فعال‌اند؛ سرور اکنون ۱۴۸ تست دارد و پوشش کامل مسیرهای end-to-end بازی هنوز باقی است.
+- lint، format check و تست‌های خودکار فعال‌اند؛ سرور اکنون ۲۰۴ تست دارد و پوشش کامل مسیرهای end-to-end بازی هنوز باقی است.
 - پایگاه‌داده: در نسخه‌ی فعلی استفاده نمی‌شود.
 
 ## ساختار پروژه
@@ -26,9 +26,11 @@ catan-online/
 │   └── src/
 │       ├── game/core.js    # مدل state، تخته و helperهای قوانین
 │       ├── game/engine.js  # اکشن‌های server-authoritative بازی
-│       ├── rooms.js        # مدیریت in-memory روم‌ها
-│       ├── config.js       # validation تنظیمات سرور
-│       └── index.js         # HTTP API و رویدادهای Socket.io
+│       ├── rooms.js        # مدیریت in-memory روم‌ها و TTL
+│       ├── config.js       # validation تنظیمات و readiness
+│       └── index.js         # HTTP API و health/Socket.io
+├── shared/                 # قراردادهای مشترک client/server
+│   └── game-constants.mjs  # RESOURCE_TYPES و BUILD_COST
 ├── HANDOFF.md              # راهنمای تحویل و برنامه‌ی ادامه‌ی کار
 ├── ISSUES.md               # backlog مشکلات با اولویت و معیار پذیرش
 └── ROADMAP.md              # نقشه‌ی راه محصول
@@ -51,7 +53,7 @@ npm ci
 npm run dev
 ```
 
-سرور روی `http://localhost:4000` اجرا می‌شود و health check در مسیر `GET /health` قرار دارد. این endpoint وضعیت سرویس، uptime و PID را به‌صورت JSON برمی‌گرداند. مقدار `PORT` باید عدد صحیح بین ۱ تا ۶۵۵۳۵ باشد؛ مقدار نامعتبر با warning به ۴۰۰۰ fallback می‌کند. سرور روی `SIGTERM` و `SIGINT` ابتدا Socket.io و سپس HTTP را graceful می‌بندد.
+سرور روی `http://localhost:4000` اجرا می‌شود و health check در مسیر `GET /health` قرار دارد. این endpoint وضعیت سرویس، uptime و PID را به‌صورت JSON برمی‌گرداند. برای orchestration، `GET /health/live` liveness و `GET /health/ready` readiness با بررسی room store و memory ارائه می‌شوند. مقدار `PORT` باید عدد صحیح بین ۱ تا ۶۵۵۳۵ باشد؛ مقدار نامعتبر با warning به ۴۰۰۰ fallback می‌کند. سرور روی `SIGTERM` و `SIGINT` ابتدا Socket.io و سپس HTTP را graceful می‌بندد.
 
 ### ۲. اجرای کلاینت
 
@@ -79,6 +81,8 @@ VITE_SERVER_URL=https://api.example.com
 NODE_ENV=production
 CLIENT_ORIGIN=https://game.example.com
 PORT=4000
+ROOM_TTL_MS=300000
+READINESS_MEMORY_THRESHOLD=0.9
 ```
 
 چند origin با comma قابل تعریف است. اگر `NODE_ENV=production` باشد و `CLIENT_ORIGIN` تنظیم نشده باشد، سرور عمداً startup را متوقف می‌کند تا اتصال browser به‌صورت خاموش خراب نشود.
