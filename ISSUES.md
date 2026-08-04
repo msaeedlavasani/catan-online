@@ -119,14 +119,16 @@
 ### ISS-009 — کنترل دسترسی اکشن‌های pending و trade
 
 - **شدت:** P1 / صحت بازی
+- **وضعیت:** بخشی رفع شد؛ authorization مربوط به pending card actions هنوز باز است.
 - **محل:** `server/src/game/engine.js:383-410`, `server/src/game/engine.js:438-458`
-- **مشکل:** بعضی resolveها فقط وجود pending را بررسی می‌کنند و ownership بازیکن/offer را به‌صورت کامل محدود نمی‌کنند؛ `cancelTrade` نیز مالکیت offer را بررسی نمی‌کند.
-- **اثر:** بازیکنی غیر از صاحب اکشن می‌تواند state pending یا offer را تغییر دهد.
-- **راه‌حل پیشنهادی:** برای هر pending، `playerId` صاحب اکشن را ذخیره و در resolve تطبیق دهید؛ cancel فقط برای proposer مجاز باشد.
+- **مشکل باقی‌مانده:** resolveهای year-of-plenty و monopoly فقط نوع pending را بررسی می‌کنند و مالک pending action را محدود نمی‌کنند.
+- **رفع‌شده:** `cancelTrade` اکنون وجود offer و مالکیت proposer را بررسی می‌کند؛ تست آن در `server/test/validation.test.js` وجود دارد.
+- **اثر:** بازیکنی غیر از صاحب pending می‌تواند state کارت را resolve کند.
+- **راه‌حل پیشنهادی:** برای هر pending، `playerId` صاحب اکشن را ذخیره و در resolve تطبیق دهید.
 - **معیار پذیرش:**
   - [ ] بازیکن دیگر نتواند year-of-plenty یا monopoly را resolve کند.
-  - [ ] بازیکن دیگر نتواند offer متعلق به شخص دیگری را cancel کند.
-  - [ ] تست authorization برای هر دو مسیر اضافه شود.
+  - [x] بازیکن دیگر نتواند offer متعلق به شخص دیگری را cancel کند.
+  - [x] تست authorization برای cancel trade اضافه شود.
 
 ### ISS-010 — اصلاح state undo و checkpointهای ناقص
 

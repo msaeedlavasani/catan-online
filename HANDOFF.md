@@ -112,7 +112,7 @@ node --check src/game/engine.js
 - CORS با allowlist قابل‌پیکربندی کنترل می‌شود؛ پیش‌فرض development فقط `http://localhost:5173` است.
 - ورودی‌های Socket.io اکنون با validation مرکزی بررسی می‌شوند؛ پوشش کامل contractهای بازی هنوز باید توسعه پیدا کند.
 - شناسه‌های روم/بازیکن با `Math.random()` ساخته می‌شوند.
-- authorization برای برخی pending actionها و cancel trade کامل نیست.
+- authorization برای pending actionهای سال فراوانی و انحصار کامل نیست؛ مالکیت cancel trade بررسی می‌شود.
 
 ### صحت state
 
