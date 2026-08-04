@@ -1,4 +1,3 @@
-import React from "react";
 import { RES_COLOR } from "../game/constants.js";
 import { shade } from "../game/helpers.js";
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { INK, SEA, GOLD, RES_COLOR, COLOR_ASSET_NAME } from "../game/constants.js";
 import { shade } from "../game/helpers.js";
 import { styles } from "../styles.js";

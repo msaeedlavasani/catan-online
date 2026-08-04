@@ -5,17 +5,20 @@ import { Server } from "socket.io";
 import { createRoom, joinRoom, getRoom, markDisconnected, markReconnected } from "./rooms.js";
 import { publicGameState } from "./game/core.js";
 import * as engine from "./game/engine.js";
+import { createCorsOptions, getAllowedOrigins } from "./cors.js";
 
 const PORT = process.env.PORT || 4000;
+const allowedOrigins = getAllowedOrigins();
+const corsOptions = createCorsOptions(allowedOrigins);
 
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.get("/health", (req, res) => res.json({ ok: true, service: "catan-server" }));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" }, // TODO: lock down before production
+  cors: corsOptions,
 });
 
 // Sends the redacted board state to everyone in the room, then privately

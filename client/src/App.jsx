@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Copy, Check, Dice5, Home, Building2, Milestone, Users, Sparkles, ScrollText } from "lucide-react";
 import { socket } from "./socket.js";
 import { styles } from "./styles.js";

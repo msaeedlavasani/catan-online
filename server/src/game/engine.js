@@ -7,7 +7,7 @@
 import {
   RESOURCE_TYPES, RES_LABEL, PLAYER_COLORS, BUILD_COST,
   shuffle, buildBoardGeometry, assignBoardContent, newId,
-  emptyResources, totalResources, canAfford, payCost, addResources,
+  totalResources, canAfford, payCost, addResources,
   distanceRuleOk, edgeIsFree, playerOwnsEdgeVertexOrRoad, vertexConnectsToPlayerRoad,
   longestRoadLength, totalScore,
 } from "./core.js";

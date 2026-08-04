@@ -1,37 +1,125 @@
 # Catan Online
 
-نسخه‌ی آنلاین و چندنفره (۲ تا ۶ نفر) بازی کاتان.
+نسخه‌ی آنلاین و چندنفره‌ی بازی کاتان با کلاینت React/Vite و سرور Node.js/Socket.io. منطق بازی در سرور اجرا و اعتبارسنجی می‌شود و کلاینت فقط state عمومی تخته و state خصوصی بازیکن خودش را دریافت می‌کند.
+
+> وضعیت فعلی: پروژه قابل نصب و build است، اما هنوز MVP پایدار و production-ready نیست. فهرست مشکلات و برنامه‌ی رفع آن‌ها در [`HANDOFF.md`](./HANDOFF.md) و [`ISSUES.md`](./ISSUES.md) قرار دارد.
+
+## وضعیت فعلی
+
+- ظرفیت فعلی روم: **۲ تا ۴ بازیکن**؛ فقط چهار رنگ فعلی asset کامل دارند.
+- نگهداری روم‌ها: حافظه‌ی سرور؛ با restart شدن سرور بازی‌ها از بین می‌روند.
+- احراز هویت و حساب کاربری: وجود ندارد.
+- lint و تست‌های پایه‌ی خودکار اضافه شده‌اند؛ پوشش کامل قوانین بازی هنوز باقی است.
+- پایگاه‌داده: در نسخه‌ی فعلی استفاده نمی‌شود.
 
 ## ساختار پروژه
 
-```
-catan-game/
-├── server/     # Node.js + Express + Socket.io + SQLite
-└── client/     # React + Vite
+```text
+catan-online/
+├── client/                 # React + Vite + Socket.io client
+│   ├── public/assets/      # assetهای تصویری تخته و مهره‌ها
+│   └── src/
+│       ├── components/     # رندر تخته و پنل‌های بازی
+│       ├── game/           # ثابت‌ها و helperهای کلاینت
+│       └── App.jsx         # جریان اصلی UI و state کلاینت
+├── server/                 # Node.js + Express + Socket.io
+│   └── src/
+│       ├── game/core.js    # مدل state، تخته و helperهای قوانین
+│       ├── game/engine.js  # اکشن‌های server-authoritative بازی
+│       ├── rooms.js        # مدیریت in-memory روم‌ها
+│       └── index.js        # HTTP API و رویدادهای Socket.io
+├── HANDOFF.md              # راهنمای تحویل و برنامه‌ی ادامه‌ی کار
+├── ISSUES.md               # backlog مشکلات با اولویت و معیار پذیرش
+└── ROADMAP.md              # نقشه‌ی راه محصول
 ```
 
-## اجرای محلی (Development)
+## پیش‌نیازها
 
-### سرور
+- Node.js و npm
+- دو پورت آزاد برای کلاینت (`5173`) و سرور (`4000`)
+
+نسخه‌ی دقیق Node در ریپو pin نشده است؛ قبل از production بهتر است نسخه‌ی پشتیبانی‌شده در `.nvmrc` یا `engines` مشخص شود.
+
+## اجرای محلی
+
+### ۱. اجرای سرور
+
 ```bash
 cd server
-npm install
-npm run dev     # روی http://localhost:4000 بالا میاد
+npm ci
+npm run dev
 ```
 
-### کلاینت
+سرور روی `http://localhost:4000` اجرا می‌شود و health check در مسیر `GET /health` قرار دارد.
+
+### ۲. اجرای کلاینت
+
+در ترمینال دوم:
+
 ```bash
 cd client
-npm install
-npm run dev     # روی http://localhost:5173 بالا میاد
+npm ci
+npm run dev
 ```
 
-کلاینت به‌صورت پیش‌فرض به `http://localhost:4000` وصل می‌شه (قابل تغییر با فایل `.env` در پوشه‌ی client، متغیر `VITE_SERVER_URL`).
+سپس آدرس نمایش‌داده‌شده توسط Vite را باز کنید؛ معمولاً `http://localhost:5173` است.
 
-## نقشه‌ی راه (Roadmap)
+کلاینت به‌صورت پیش‌فرض به `http://localhost:4000` وصل می‌شود. برای تغییر آن، در `client/.env` بنویسید:
 
-پیشرفت پروژه رو در [`ROADMAP.md`](./ROADMAP.md) ببینید. فعلاً روی **اسپرینت ۰ (پایه‌ریزی ریپو و پلمبینگ سرور/کلاینت)** هستیم.
+```env
+VITE_SERVER_URL=http://localhost:4000
+```
 
-## استک فنی
-- **Server:** Node.js, Express, Socket.io, better-sqlite3
-- **Client:** React, Vite, Socket.io-client
+## دستورات توسعه
+
+### Client
+
+```bash
+cd client
+npm run dev       # توسعه
+npm run build     # build تولیدی
+npm run preview   # سرو کردن build محلی
+```
+
+### Server
+
+```bash
+cd server
+npm run dev       # توسعه با nodemon
+npm start         # اجرای مستقیم
+```
+
+scriptهای `lint` و `test` در هر دو package فعال هستند. تست‌های فعلی پایه‌اند و پوشش کامل engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
+
+## معماری کوتاه
+
+- Express فقط health check و middlewareهای پایه را فراهم می‌کند.
+- Socket.io رویدادهای ساخت/پیوستن به روم و اکشن‌های بازی را مدیریت می‌کند.
+- `server/src/game/engine.js` مرجع اعتبارسنجی اکشن‌هاست؛ به منطق بازی از سمت کلاینت اعتماد نمی‌شود.
+- state عمومی بدون دست کارت و منابع سایر بازیکنان broadcast می‌شود و state خصوصی هر بازیکن جداگانه ارسال می‌گردد.
+- روم‌ها در `Map` نگهداری می‌شوند؛ این تصمیم برای توسعه‌ی اولیه مناسب است اما برای چند process یا persistence کافی نیست.
+
+## بررسی سریع صحت پروژه
+
+```bash
+cd client
+npm ci
+npm run build
+
+cd ../server
+npm ci
+node --check src/index.js
+node --check src/rooms.js
+node --check src/game/core.js
+node --check src/game/engine.js
+```
+
+## مستندات ادامه‌ی کار
+
+- [`HANDOFF.md`](./HANDOFF.md): وضعیت فنی، ریسک‌ها، روش ادامه و ترتیب پیشنهادی کار.
+- [`ISSUES.md`](./ISSUES.md): issueهای مستقل با شدت، محل، اثر، راه‌حل و معیار پذیرش.
+- [`ROADMAP.md`](./ROADMAP.md): roadmap محصول.
+
+## مجوز
+
+در حال حاضر فایل license در ریپو تعریف نشده است. پیش از انتشار عمومی، مجوز پروژه مشخص شود.

@@ -1,4 +1,3 @@
-import React from "react";
 import { styles } from "../styles.js";
 import { RES_COLOR, RES_LABEL, RESOURCE_TYPES } from "../game/constants.js";
 import { publicScore, totalResources, playerPortRate } from "../game/helpers.js";
