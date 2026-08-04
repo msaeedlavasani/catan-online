@@ -3,6 +3,7 @@ import http from "http";
 import cors from "cors";
 import { Server } from "socket.io";
 import { createRoom, joinRoom, getRoom, markDisconnected, markReconnected } from "./rooms.js";
+import { publicGameState } from "./game/core.js";
 import * as engine from "./game/engine.js";
 
 const PORT = process.env.PORT || 4000;
@@ -17,9 +18,23 @@ const io = new Server(server, {
   cors: { origin: "*" }, // TODO: lock down before production
 });
 
-function broadcast(roomId) {
+// Sends the redacted board state to everyone in the room, then privately
+// gives each connected player their own resources/devCards — so no one can
+// see another player's hand, even via the browser network tab.
+async function broadcast(roomId) {
   const room = getRoom(roomId);
-  if (room) io.to(roomId).emit("gameState", room);
+  if (!room) return;
+  io.to(roomId).emit("gameState", publicGameState(room));
+  const sockets = await io.in(roomId).fetchSockets();
+  for (const s of sockets) {
+    const player = room.players.find((p) => p.id === s.data.playerId);
+    if (player) s.emit("myPrivateState", { resources: player.resources, devCards: player.devCards });
+  }
+}
+
+function sendPrivateState(socket, room, playerId) {
+  const player = room.players.find((p) => p.id === playerId);
+  if (player) socket.emit("myPrivateState", { resources: player.resources, devCards: player.devCards });
 }
 
 // Wraps an engine action: runs it, and if it succeeds, broadcasts the new
@@ -42,7 +57,8 @@ io.on("connection", (socket) => {
     socket.join(room.gameId);
     socket.data.playerId = player.id;
     socket.data.roomId = room.gameId;
-    callback?.({ room, playerId: player.id });
+    callback?.({ room: publicGameState(room), playerId: player.id });
+    sendPrivateState(socket, room, player.id);
   });
 
   socket.on("joinRoom", ({ roomId, playerName }, callback) => {
@@ -52,7 +68,8 @@ io.on("connection", (socket) => {
     socket.join(room.gameId);
     socket.data.playerId = player.id;
     socket.data.roomId = room.gameId;
-    callback?.({ room, playerId: player.id });
+    callback?.({ room: publicGameState(room), playerId: player.id });
+    sendPrivateState(socket, room, player.id);
     broadcast(room.gameId);
   });
 
@@ -62,12 +79,14 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     socket.data.playerId = playerId;
     socket.data.roomId = roomId;
-    callback?.({ room, playerId });
+    callback?.({ room: publicGameState(room), playerId });
+    sendPrivateState(socket, room, playerId);
     broadcast(roomId);
   });
 
   socket.on("requestRoomState", ({ roomId }, callback) => {
-    callback?.({ room: getRoom(roomId) || null });
+    const room = getRoom(roomId);
+    callback?.({ room: room ? publicGameState(room) : null });
   });
 
   // --- Game actions (all validated + executed server-side) ---
@@ -90,12 +109,13 @@ io.on("connection", (socket) => {
   socket.on("acceptTrade", handleAction(socket, (g, pid, { offerId }) => engine.acceptTrade(g, pid, offerId)));
   socket.on("cancelTrade", handleAction(socket, (g, pid, { offerId }) => engine.cancelTrade(g, pid, offerId)));
   socket.on("endTurn", handleAction(socket, (g, pid) => engine.endTurn(g, pid)));
+  socket.on("undoTurnActions", handleAction(socket, (g, pid) => engine.undoTurnActions(g, pid)));
 
   socket.on("disconnect", () => {
     const { roomId, playerId } = socket.data;
     if (roomId && playerId) {
       const room = markDisconnected(roomId, playerId);
-      if (room) io.to(roomId).emit("gameState", room);
+      if (room) io.to(roomId).emit("gameState", publicGameState(room));
     }
   });
 });

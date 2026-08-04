@@ -30,7 +30,7 @@ export function joinRoom(roomId, playerName) {
   if (game.players.length >= 4) return null; // only 4 player colors have matching art
   const player = newPlayer(playerName || "Player", cryptoId());
   game.players.push(player);
-  game.log.push(`${player.name} joined the game.`);
+  game.log.push(`${player.name} به بازی پیوست.`);
   return { room: game, player };
 }
 

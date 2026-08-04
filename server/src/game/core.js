@@ -1,5 +1,5 @@
 
-export const RES_LABEL = { wood: "Timber", brick: "Brick", wheat: "Grain", sheep: "Wool", ore: "Ore", desert: "Desert" };
+export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
 export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
 export const BUILD_COST = {
@@ -306,21 +306,22 @@ export function totalScore(player) {
   return publicScore(player) + hiddenVP;
 }
 
-/* ============================== STORAGE HELPERS ============================== */
-async function loadGame(gameId) {
-  try {
-    const r = await window.storage.get(`catan:${gameId}`, true);
-    return r ? JSON.parse(r.value) : null;
-  } catch (e) {
-    return null;
-  }
-}
-async function saveGame(gameId, state) {
-  try {
-    await window.storage.set(`catan:${gameId}`, JSON.stringify(state), true);
-  } catch (e) {
-    console.error("save failed", e);
-  }
+/* ============================== PUBLIC STATE (hides other players' hands) ============================== */
+// Sent to everyone in the room. Each player's own resources/devCards are
+// stripped out here and delivered separately via a private per-socket event,
+// so no client can see another player's hand from the network tab.
+export function publicGameState(game) {
+  return {
+    ...game,
+    players: game.players.map((p) => {
+      const { resources, devCards, ...publicFields } = p;
+      return {
+        ...publicFields,
+        resourceCount: totalResources(resources),
+        devCardCount: devCards.length,
+      };
+    }),
+  };
 }
 
 /* ============================== INITIAL STATE ============================== */
@@ -338,7 +339,7 @@ export function createLobbyState(gameId, hostPlayer) {
     setupSubPhase: "settlement",
     lastPlacedSettlement: null,
     dice: null,
-    log: [`${hostPlayer.name} created the game.`],
+    log: [`${hostPlayer.name} بازی رو ساخت.`],
     pending: null,
     tradeOffers: [],
     bank: { wood: 19, brick: 19, wheat: 19, sheep: 19, ore: 19 },
@@ -347,6 +348,7 @@ export function createLobbyState(gameId, hostPlayer) {
     longestRoadPlayerId: null,
     largestArmyPlayerId: null,
     winnerId: null,
+    turnCheckpoint: null,
     updatedAt: Date.now(),
   };
 }

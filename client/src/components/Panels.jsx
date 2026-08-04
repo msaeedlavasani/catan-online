@@ -3,20 +3,35 @@ import { styles } from "../styles.js";
 import { RES_COLOR, RES_LABEL, RESOURCE_TYPES } from "../game/constants.js";
 import { publicScore, totalResources, playerPortRate } from "../game/helpers.js";
 
-export function PlayersPanel({ game, me }) {
+export function SuggestionsPanel({ suggestions }) {
+  if (!suggestions || suggestions.length === 0) return null;
+  const colorFor = (kind) => (kind === "can" ? "#2f6b3a" : kind === "need" ? "#7a5a1e" : styles.card.color);
   return (
     <div style={styles.card}>
-      <div style={styles.cardTitle}>Players</div>
+      <div style={styles.cardTitle}>چیکار می‌تونم بکنم؟</div>
+      {suggestions.map((s, i) => (
+        <div key={i} style={{ fontSize: 13, padding: "3px 0", color: colorFor(s.kind), direction: "rtl", textAlign: "right" }}>
+          {s.kind === "can" ? "✅ " : s.kind === "need" ? "• " : "ℹ️ "}{s.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PlayersPanel({ game, me, myPlayer }) {
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardTitle}>بازیکن‌ها</div>
       {game.players.map((p, i) => (
         <div key={p.id} style={{ ...styles.playerCard, borderColor: p.color, opacity: i === game.currentPlayerIndex && game.phase !== "lobby" ? 1 : 0.75 }}>
           <div style={{ ...styles.playerDot, background: p.color }} />
           <div style={styles.playerCardBody}>
-            <div style={styles.playerCardName}>{p.name}{p.id === me.playerId ? " (you)" : ""}</div>
-            <div style={styles.playerCardMeta}>
-              Score: {publicScore(p)}{p.id === me.playerId ? ` (+${p.devCards.filter(c=>c.type==='victory').length} hidden)` : ""} · Roads: {p.roads.length} · Cards: {totalResources(p.resources)}
-              {p.hasLongestRoad && " · 🛣️ Longest Road"}
-              {p.hasLargestArmy && " · ⚔️ Largest Army"}
-              {p.connected === false && " · ⚠️ disconnected"}
+            <div style={styles.playerCardName}>{p.name}{p.id === me.playerId ? " (شما)" : ""}</div>
+            <div style={{ ...styles.playerCardMeta, direction: "rtl", textAlign: "right" }}>
+              امتیاز: {publicScore(p)}{p.id === me.playerId && myPlayer ? ` (+${myPlayer.devCards.filter((c) => c.type === "victory").length} مخفی)` : ""} · جاده: {p.roads.length} · کارت: {p.resourceCount}
+              {p.hasLongestRoad && " · 🛣️ طولانی‌ترین جاده"}
+              {p.hasLargestArmy && " · ⚔️ بزرگ‌ترین ارتش"}
+              {p.connected === false && " · ⚠️ قطع شده"}
             </div>
           </div>
         </div>
@@ -30,10 +45,10 @@ export function DiscardModal({ player, picks, setPicks, onSubmit }) {
   const chosen = totalResources(picks);
   return (
     <div style={styles.card}>
-      <div style={styles.cardTitle}>Discard {needed} Cards</div>
+      <div style={styles.cardTitle}>{needed} کارت دور بریز</div>
       {RESOURCE_TYPES.map((r) => (
         <div key={r} style={styles.discardRow}>
-          <span>{RES_LABEL[r]} (have {player.resources[r]})</span>
+          <span>{RES_LABEL[r]} (داری: {player.resources[r]})</span>
           <div style={styles.stepper}>
             <button style={styles.miniBtn} onClick={() => setPicks({ ...picks, [r]: Math.max(0, picks[r] - 1) })}>-</button>
             <span>{picks[r]}</span>
@@ -41,7 +56,7 @@ export function DiscardModal({ player, picks, setPicks, onSubmit }) {
           </div>
         </div>
       ))}
-      <button style={styles.primaryBtn} disabled={chosen !== needed} onClick={onSubmit}>Discard {chosen}/{needed}</button>
+      <button style={styles.primaryBtn} disabled={chosen !== needed} onClick={onSubmit}>دور انداختن {chosen}/{needed}</button>
     </div>
   );
 }
@@ -52,7 +67,7 @@ export function YearOfPlentyModal({ picks, setPicks, onSubmit }) {
   }
   return (
     <div style={styles.card}>
-      <div style={styles.cardTitle}>Year of Plenty — pick 2</div>
+      <div style={styles.cardTitle}>سال فراوانی — ۲ تا انتخاب کن</div>
       <div style={styles.resRow}>
         {RESOURCE_TYPES.map((r) => (
           <button key={r} style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }} onClick={() => toggle(r)}>
@@ -60,10 +75,10 @@ export function YearOfPlentyModal({ picks, setPicks, onSubmit }) {
           </button>
         ))}
       </div>
-      <p style={styles.hint}>Chosen: {picks.map((p) => RES_LABEL[p]).join(", ") || "none"}</p>
+      <p style={styles.hint}>انتخاب‌شده: {picks.map((p) => RES_LABEL[p]).join("، ") || "هیچی"}</p>
       <div style={{ display: "flex", gap: 8 }}>
-        <button style={styles.secondaryBtn} onClick={() => setPicks([])}>Reset</button>
-        <button style={styles.primaryBtn} disabled={picks.length !== 2} onClick={() => onSubmit(picks)}>Confirm</button>
+        <button style={styles.secondaryBtn} onClick={() => setPicks([])}>ریست</button>
+        <button style={styles.primaryBtn} disabled={picks.length !== 2} onClick={() => onSubmit(picks)}>تأیید</button>
       </div>
     </div>
   );
@@ -72,7 +87,7 @@ export function YearOfPlentyModal({ picks, setPicks, onSubmit }) {
 export function MonopolyModal({ onSubmit }) {
   return (
     <div style={styles.card}>
-      <div style={styles.cardTitle}>Monopoly — pick a resource</div>
+      <div style={styles.cardTitle}>انحصار — یه منبع انتخاب کن</div>
       <div style={styles.resRow}>
         {RESOURCE_TYPES.map((r) => (
           <button key={r} style={{ ...styles.resChip, background: RES_COLOR[r], cursor: "pointer" }} onClick={() => onSubmit(r)}>
@@ -90,14 +105,14 @@ export function TradePanel({ myPlayer, board, onBankTrade, tradeGive, setTradeGi
     <div>
       <div style={styles.tradeRow}>
         <div style={{ flex: 1 }}>
-          <div style={styles.hint}>Give</div>
+          <div style={styles.hint}>می‌دی</div>
           <select style={styles.select} value={tradeGive || ""} onChange={(e) => setTradeGive(e.target.value || null)}>
             <option value="">—</option>
             {RESOURCE_TYPES.map((r) => <option key={r} value={r}>{RES_LABEL[r]} ({myPlayer.resources[r]})</option>)}
           </select>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={styles.hint}>Want</div>
+          <div style={styles.hint}>می‌خوای</div>
           <select style={styles.select} value={tradeWant || ""} onChange={(e) => setTradeWant(e.target.value || null)}>
             <option value="">—</option>
             {RESOURCE_TYPES.map((r) => <option key={r} value={r}>{RES_LABEL[r]}</option>)}
@@ -109,14 +124,14 @@ export function TradePanel({ myPlayer, board, onBankTrade, tradeGive, setTradeGi
         disabled={!tradeGive || !tradeWant || myPlayer.resources[tradeGive] < rate}
         onClick={() => onBankTrade(tradeGive, tradeWant)}
       >
-        Trade with Bank ({rate}:1)
+        معامله با بانک ({rate}:1)
       </button>
       <button
         style={styles.secondaryBtn}
         disabled={!tradeGive || !tradeWant || hasOpenOffer || myPlayer.resources[tradeGive] < 1}
         onClick={onProposeTrade}
       >
-        Offer to Other Players (1:1)
+        پیشنهاد به بازیکنای دیگه (1:1)
       </button>
     </div>
   );

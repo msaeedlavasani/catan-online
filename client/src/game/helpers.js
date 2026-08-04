@@ -1,4 +1,64 @@
-import { RESOURCE_TYPES } from "./constants.js";
+import { RESOURCE_TYPES, BUILD_COST, RES_LABEL } from "./constants.js";
+
+function canAffordLocal(res, cost) {
+  return Object.entries(cost).every(([k, v]) => res[k] >= v);
+}
+function missingFor(res, cost) {
+  const missing = {};
+  Object.entries(cost).forEach(([k, v]) => {
+    const need = v - (res[k] || 0);
+    if (need > 0) missing[k] = need;
+  });
+  return missing;
+}
+function describeMissing(missing) {
+  return Object.entries(missing).map(([k, v]) => `${v} ${RES_LABEL[k]}`).join("، ");
+}
+
+// Returns a small list of { text, kind } suggestions for the sidebar, based
+// purely on the player's current resources (does not check board placement
+// validity — that's still enforced server-side when they actually try).
+export function getSuggestions(game, myPlayer) {
+  if (!game || !myPlayer) return [];
+  const isMyTurn = game.players[game.currentPlayerIndex]?.id === myPlayer.id;
+  if (game.phase === "setup") {
+    return isMyTurn
+      ? [{ kind: "info", text: game.setupSubPhase === "settlement" ? "روستات رو روی تخته بذار." : "یه جاده وصل به روستای جدیدت بذار." }]
+      : [];
+  }
+  if (game.phase !== "playing" || !isMyTurn) return [];
+  if (game.pending) return [{ kind: "info", text: "اول باید اقدام فعلی رو تموم کنی." }];
+  if (!game.dice) return [{ kind: "info", text: "برای شروع نوبتت تاس بنداز." }];
+
+  const res = myPlayer.resources;
+  const suggestions = [];
+
+  const canRoad = canAffordLocal(res, BUILD_COST.road);
+  suggestions.push(canRoad
+    ? { kind: "can", text: "می‌تونی یه جاده بسازی." }
+    : { kind: "need", text: `جاده: ${describeMissing(missingFor(res, BUILD_COST.road))} کم داری.` });
+
+  const canSettlement = canAffordLocal(res, BUILD_COST.settlement);
+  suggestions.push(canSettlement
+    ? { kind: "can", text: "می‌تونی یه روستا بسازی." }
+    : { kind: "need", text: `روستا: ${describeMissing(missingFor(res, BUILD_COST.settlement))} کم داری.` });
+
+  if (myPlayer.settlements.length > 0) {
+    const canCity = canAffordLocal(res, BUILD_COST.city);
+    suggestions.push(canCity
+      ? { kind: "can", text: "می‌تونی یه روستا رو به شهر ارتقا بدی." }
+      : { kind: "need", text: `شهر: ${describeMissing(missingFor(res, BUILD_COST.city))} کم داری.` });
+  }
+
+  const canDev = canAffordLocal(res, BUILD_COST.devCard) && game.devDeck.length > 0;
+  suggestions.push(canDev
+    ? { kind: "can", text: "می‌تونی یه کارت توسعه بخری." }
+    : game.devDeck.length === 0
+      ? { kind: "info", text: "دیگه کارت توسعه‌ای تو دسته نمونده." }
+      : { kind: "need", text: `کارت توسعه: ${describeMissing(missingFor(res, BUILD_COST.devCard))} کم داری.` });
+
+  return suggestions;
+}
 
 export function emptyResources() {
   return { wood: 0, brick: 0, wheat: 0, sheep: 0, ore: 0 };

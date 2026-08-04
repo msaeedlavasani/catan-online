@@ -65,7 +65,7 @@ export const styles = {
   actionGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 9 },
   toggleBtn: { display: "flex", alignItems: "center", gap: 6, justifyContent: "center", padding: "10px 6px", borderRadius: 6, border: `1.5px solid ${SEA}`, background: "transparent", color: SEA, fontSize: 12.5, fontWeight: 700, cursor: "pointer", minHeight: 40 },
   toggleBtnActive: { display: "flex", alignItems: "center", gap: 6, justifyContent: "center", padding: "10px 6px", borderRadius: 6, border: `1.5px solid ${SEA}`, background: SEA, color: PARCHMENT, fontSize: 12.5, fontWeight: 700, cursor: "pointer", minHeight: 40 },
-  hint: { fontSize: 13, color: "#5a4a35", marginBottom: 6 },
+  hint: { fontSize: 13, color: "#5a4a35", marginBottom: 6, direction: "rtl", textAlign: "right" },
   playerCard: { display: "flex", alignItems: "center", gap: 9, padding: "8px 6px", borderLeft: "4px solid", marginBottom: 5, borderRadius: 4 },
   playerDot: { width: 11, height: 11, borderRadius: "50%", flexShrink: 0 },
   playerCardBody: { flex: 1, minWidth: 0 },

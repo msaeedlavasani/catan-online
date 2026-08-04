@@ -13,7 +13,7 @@ export const RES_COLOR = {
   ore: "#6b6f76",
   desert: "#d9c896",
 };
-export const RES_LABEL = { wood: "Timber", brick: "Brick", wheat: "Grain", sheep: "Wool", ore: "Ore", desert: "Desert" };
+export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
 export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
 // Only 4 of our 6 player colors currently have matching hand-made piece art
@@ -33,10 +33,10 @@ export const BUILD_COST = {
 };
 export const RESOURCE_TYPES = ["wood", "brick", "wheat", "sheep", "ore"];
 export const DEV_LABEL = {
-  knight: "Knight",
-  victory: "Victory Point",
-  roadBuilding: "Road Building",
-  yearOfPlenty: "Year of Plenty",
-  monopoly: "Monopoly",
+  knight: "شوالیه",
+  victory: "امتیاز پیروزی",
+  roadBuilding: "جاده‌سازی",
+  yearOfPlenty: "سال فراوانی",
+  monopoly: "انحصار",
 };
 

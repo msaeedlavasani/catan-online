@@ -15,6 +15,62 @@ import {
 function fail(error) { return { ok: false, error }; }
 const OK = { ok: true };
 
+// --- Turn-undo checkpoint system ---
+// A checkpoint captures everything that CAN safely be reverted: resources,
+// roads/settlements/cities, dev card hands, bank, dev deck, and the longest
+// road / largest army holders. It is refreshed (moved forward) whenever an
+// irreversible thing happens — dice resolve, a dev card's effect finishes,
+// or a player-to-player trade completes — so "undo" always means "undo back
+// to the last safe point", never further.
+function snapshotCheckpoint(g) {
+  return {
+    players: g.players.map((p) => ({
+      resources: { ...p.resources },
+      roads: [...p.roads],
+      settlements: [...p.settlements],
+      cities: [...p.cities],
+      devCards: p.devCards.map((c) => ({ ...c })),
+      knightsPlayed: p.knightsPlayed,
+      hasLongestRoad: p.hasLongestRoad,
+      hasLargestArmy: p.hasLargestArmy,
+    })),
+    bank: { ...g.bank },
+    devDeck: [...g.devDeck],
+    longestRoadPlayerId: g.longestRoadPlayerId,
+    largestArmyPlayerId: g.largestArmyPlayerId,
+  };
+}
+function refreshCheckpoint(g) {
+  g.turnCheckpoint = snapshotCheckpoint(g);
+}
+function restoreCheckpoint(g, snap) {
+  g.players.forEach((p, i) => {
+    const s = snap.players[i];
+    p.resources = { ...s.resources };
+    p.roads = [...s.roads];
+    p.settlements = [...s.settlements];
+    p.cities = [...s.cities];
+    p.devCards = s.devCards.map((c) => ({ ...c }));
+    p.knightsPlayed = s.knightsPlayed;
+    p.hasLongestRoad = s.hasLongestRoad;
+    p.hasLargestArmy = s.hasLargestArmy;
+  });
+  g.bank = { ...snap.bank };
+  g.devDeck = [...snap.devDeck];
+  g.longestRoadPlayerId = snap.longestRoadPlayerId;
+  g.largestArmyPlayerId = snap.largestArmyPlayerId;
+}
+
+export function undoTurnActions(g, playerId) {
+  if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
+  if (g.pending) return fail("Resolve the pending action first.");
+  if (!g.turnCheckpoint) return fail("Nothing to undo.");
+  const player = g.players.find((p) => p.id === playerId);
+  restoreCheckpoint(g, g.turnCheckpoint);
+  g.log.push(`${player.name} کارای این نوبتش رو برگردوند.`);
+  return OK;
+}
+
 function currentSetupPlayerId(g) {
   return g.setupOrder[g.setupStep];
 }
@@ -40,7 +96,7 @@ function checkWinner(g) {
   if (winner) {
     g.phase = "ended";
     g.winnerId = winner.id;
-    g.log.push(`${winner.name} has won the game with ${totalScore(winner)} victory points!`);
+    g.log.push(`${winner.name} بازی رو با ${totalScore(winner)} امتیاز پیروزی برد!`);
   }
 }
 
@@ -71,7 +127,7 @@ export function startGame(g, playerId) {
   g.setupStep = 0;
   g.setupSubPhase = "settlement";
   g.currentPlayerIndex = g.players.findIndex((p) => p.id === g.setupOrder[0]);
-  g.log.push("The game has begun! Setup phase: place your first settlement.");
+  g.log.push("بازی شروع شد! مرحله‌ی چیدمان: اولین روستات رو بذار.");
   return OK;
 }
 
@@ -83,7 +139,7 @@ export function placeSetupSettlement(g, playerId, vertexId) {
   player.settlements.push(vertexId);
   g.lastPlacedSettlement = vertexId;
   g.setupSubPhase = "road";
-  g.log.push(`${player.name} placed a settlement.`);
+  g.log.push(`${player.name} یه روستا ساخت.`);
   return OK;
 }
 
@@ -95,7 +151,7 @@ export function placeSetupRoad(g, playerId, edgeId) {
   if (!edgeIsFree(edgeId, g.players)) return fail("Edge already has a road.");
   if (e.v1 !== g.lastPlacedSettlement && e.v2 !== g.lastPlacedSettlement) return fail("Road must touch your new settlement.");
   player.roads.push(edgeId);
-  g.log.push(`${player.name} placed a road.`);
+  g.log.push(`${player.name} یه جاده ساخت.`);
 
   const isSecondRound = g.setupStep >= g.setupOrder.length / 2;
   if (isSecondRound) {
@@ -114,7 +170,7 @@ export function placeSetupRoad(g, playerId, edgeId) {
     g.phase = "playing";
     g.turnNumber = 1;
     g.currentPlayerIndex = g.players.findIndex((p) => p.id === g.setupOrder[0]);
-    g.log.push("Setup complete. The game begins — roll the dice!");
+    g.log.push("چیدمان تموم شد. بازی شروع میشه — تاس بنداز!");
   } else {
     const nextPid = g.setupOrder[g.setupStep];
     g.currentPlayerIndex = g.players.findIndex((p) => p.id === nextPid);
@@ -130,12 +186,12 @@ export function rollDice(g, playerId) {
   const d2 = 1 + Math.floor(Math.random() * 6);
   const sum = d1 + d2;
   g.dice = [d1, d2];
-  g.log.push(`${g.players[g.currentPlayerIndex].name} rolled ${d1} + ${d2} = ${sum}.`);
+  g.log.push(`${g.players[g.currentPlayerIndex].name} تاس انداخت: ${d1} + ${d2} = ${sum}`);
 
   if (sum === 7) {
     const discardPlayers = g.players.filter((p) => totalResources(p.resources) > 7).map((p) => p.id);
     g.pending = discardPlayers.length > 0 ? { type: "discard", remaining: discardPlayers } : { type: "robberMove" };
-    g.log.push("Rolled a 7! The robber stirs.");
+    g.log.push("عدد ۷ اومد! راهزن تکون خورد.");
   } else {
     g.board.tiles.forEach((tile) => {
       if (tile.number !== sum || tile.id === g.robberTileId) return;
@@ -154,6 +210,7 @@ export function rollDice(g, playerId) {
       }
     });
   }
+  if (!g.pending) refreshCheckpoint(g);
   return OK;
 }
 
@@ -168,7 +225,7 @@ export function submitDiscard(g, playerId, picks) {
   player.resources = payCost(player.resources, picks);
   Object.entries(picks).forEach(([k, v]) => (g.bank[k] += v));
   g.pending.remaining = g.pending.remaining.filter((id) => id !== playerId);
-  g.log.push(`${player.name} discarded ${needed} cards.`);
+  g.log.push(`${player.name} ${needed} کارت دور انداخت.`);
   if (g.pending.remaining.length === 0) g.pending = { type: "robberMove" };
   return OK;
 }
@@ -188,8 +245,9 @@ export function moveRobber(g, playerId, tileId) {
       }
     });
   });
-  g.log.push(`${g.players[g.currentPlayerIndex].name} moved the robber.`);
+  g.log.push(`${g.players[g.currentPlayerIndex].name} راهزن رو جابه‌جا کرد.`);
   g.pending = victims.size === 0 ? null : { type: "robberSteal", victims: [...victims] };
+  if (!g.pending) refreshCheckpoint(g);
   return OK;
 }
 
@@ -204,9 +262,10 @@ export function stealFrom(g, playerId, victimId) {
     const picked = pool[Math.floor(Math.random() * pool.length)];
     victim.resources[picked] -= 1;
     thief.resources[picked] += 1;
-    g.log.push(`${thief.name} stole a card from ${victim.name}.`);
+    g.log.push(`${thief.name} یه کارت از ${victim.name} دزدید.`);
   }
   g.pending = null;
+  refreshCheckpoint(g);
   return OK;
 }
 
@@ -223,10 +282,10 @@ export function buildRoad(g, playerId, edgeId) {
     g.bank.wood += 1;
   }
   player.roads.push(edgeId);
-  g.log.push(`${player.name} built a road.`);
+  g.log.push(`${player.name} یه جاده ساخت.`);
   if (free) {
     g.pending.remaining -= 1;
-    if (g.pending.remaining <= 0) g.pending = null;
+    if (g.pending.remaining <= 0) { g.pending = null; refreshCheckpoint(g); }
   }
   recomputeLongestRoad(g);
   checkWinner(g);
@@ -242,7 +301,7 @@ export function buildSettlement(g, playerId, vertexId) {
   player.resources = payCost(player.resources, BUILD_COST.settlement);
   g.bank.brick += 1; g.bank.wood += 1; g.bank.wheat += 1; g.bank.sheep += 1;
   player.settlements.push(vertexId);
-  g.log.push(`${player.name} built a settlement.`);
+  g.log.push(`${player.name} یه روستا ساخت.`);
   checkWinner(g);
   return OK;
 }
@@ -256,7 +315,7 @@ export function buildCity(g, playerId, vertexId) {
   g.bank.wheat += 2; g.bank.ore += 3;
   player.settlements = player.settlements.filter((v) => v !== vertexId);
   player.cities.push(vertexId);
-  g.log.push(`${player.name} upgraded a settlement to a city.`);
+  g.log.push(`${player.name} روستاش رو به شهر ارتقا داد.`);
   checkWinner(g);
   return OK;
 }
@@ -270,7 +329,7 @@ export function buyDevCard(g, playerId) {
   g.bank.wheat += 1; g.bank.sheep += 1; g.bank.ore += 1;
   const card = g.devDeck.pop();
   player.devCards.push({ id: newId(), type: card, boughtTurn: g.turnNumber });
-  g.log.push(`${player.name} bought a development card.`);
+  g.log.push(`${player.name} یه کارت توسعه خرید.`);
   checkWinner(g);
   return OK;
 }
@@ -288,7 +347,7 @@ export function playDevCard(g, playerId, cardId, type) {
     player.knightsPlayed += 1;
     g.hasPlayedDevCardThisTurn = true;
     g.pending = { type: "robberMove" };
-    g.log.push(`${player.name} played a Knight.`);
+    g.log.push(`${player.name} کارت شوالیه رو بازی کرد.`);
     let bestPid = g.largestArmyPlayerId;
     let bestCount = bestPid ? g.players.find((p) => p.id === bestPid).knightsPlayed : 2;
     g.players.forEach((p) => {
@@ -304,17 +363,17 @@ export function playDevCard(g, playerId, cardId, type) {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
     g.pending = { type: "roadBuildingFree", remaining: 2 };
-    g.log.push(`${player.name} played Road Building.`);
+    g.log.push(`${player.name} کارت جاده‌سازی رو بازی کرد.`);
   } else if (type === "yearOfPlenty") {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
     g.pending = { type: "yearOfPlenty" };
-    g.log.push(`${player.name} played Year of Plenty.`);
+    g.log.push(`${player.name} کارت سال فراوانی رو بازی کرد.`);
   } else if (type === "monopoly") {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
     g.pending = { type: "monopoly" };
-    g.log.push(`${player.name} played Monopoly.`);
+    g.log.push(`${player.name} کارت انحصار رو بازی کرد.`);
   } else {
     return fail("Unknown card type.");
   }
@@ -329,8 +388,9 @@ export function resolveYearOfPlenty(g, playerId, picks) {
   if (!canAfford(g.bank, need)) return fail("Bank doesn't have those resources.");
   g.bank = payCost(g.bank, need);
   player.resources = addResources(player.resources, need);
-  g.log.push(`${player.name} took resources from the bank.`);
+  g.log.push(`${player.name} از بانک منبع برداشت.`);
   g.pending = null;
+  refreshCheckpoint(g);
   return OK;
 }
 
@@ -344,8 +404,9 @@ export function resolveMonopoly(g, playerId, resource) {
     p.resources[resource] = 0;
   });
   player.resources[resource] += total;
-  g.log.push(`${player.name} monopolized ${RES_LABEL[resource]} (${total} cards).`);
+  g.log.push(`${player.name} روی ${RES_LABEL[resource]} انحصار گرفت (${total} کارت).`);
   g.pending = null;
+  refreshCheckpoint(g);
   return OK;
 }
 
@@ -358,7 +419,7 @@ export function bankTrade(g, playerId, give, want) {
   player.resources[want] += 1;
   g.bank[give] += rate;
   g.bank[want] -= 1;
-  g.log.push(`${player.name} traded ${rate} ${RES_LABEL[give]} for 1 ${RES_LABEL[want]} with the bank.`);
+  g.log.push(`${player.name} با بانک معامله کرد: ${rate} ${RES_LABEL[give]} برای ۱ ${RES_LABEL[want]}.`);
   return OK;
 }
 
@@ -366,8 +427,11 @@ export function proposeTrade(g, playerId, give, want) {
   const player = g.players.find((p) => p.id === playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (player.resources[give] < 1) return fail("You don't have that resource.");
-  g.tradeOffers = [{ id: newId(), from: player.id, give, want, status: "open" }];
-  g.log.push(`${player.name} offers ${RES_LABEL[give]} for ${RES_LABEL[want]}.`);
+  // Only replace THIS player's own open offer, so we don't wipe out an open
+  // offer another player might have proposed.
+  g.tradeOffers = g.tradeOffers.filter((o) => o.from !== playerId || o.status !== "open");
+  g.tradeOffers.push({ id: newId(), from: player.id, give, want, status: "open" });
+  g.log.push(`${player.name} پیشنهاد داد: ${RES_LABEL[give]} بابت ${RES_LABEL[want]}.`);
   return OK;
 }
 
@@ -383,7 +447,8 @@ export function acceptTrade(g, playerId, offerId) {
   acceptor.resources[offer.want] -= 1;
   acceptor.resources[offer.give] += 1;
   offer.status = "done";
-  g.log.push(`${acceptor.name} accepted ${proposer.name}'s trade.`);
+  g.log.push(`${acceptor.name} معامله‌ی ${proposer.name} رو قبول کرد.`);
+  refreshCheckpoint(g);
   return OK;
 }
 
@@ -398,8 +463,9 @@ export function endTurn(g, playerId) {
   g.tradeOffers = [];
   g.dice = null;
   g.hasPlayedDevCardThisTurn = false;
+  g.turnCheckpoint = null; // nothing to undo until the next player rolls
   g.currentPlayerIndex = (g.currentPlayerIndex + 1) % g.players.length;
   g.turnNumber += 1;
-  g.log.push(`${g.players[g.currentPlayerIndex].name}'s turn.`);
+  g.log.push(`نوبت ${g.players[g.currentPlayerIndex].name}.`);
   return OK;
 }
