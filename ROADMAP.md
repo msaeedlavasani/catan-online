@@ -14,15 +14,15 @@
 ## ⬜ اسپرینت ۱ — MVP پایدار (بازی کامل، بدون اکانت)
 - [x] validation مرکزی برای payloadهای Socket.io
 - [x] محدود کردن CORS به originهای مجاز
-- [ ] امن کردن IDهای روم و بازیکن
-- [ ] تست unit برای قوانین اصلی بازی
+- [x] امن کردن IDهای روم و بازیکن
+- [x] تست unit برای قوانین اصلی بازی
 - [ ] تست چندبازیکنه‌ی end-to-end
 - [ ] تعیین نهایی ظرفیت رسمی بازیکن‌ها و assetها
-- [ ] تثبیت قرارداد undo و pending actionها
+- [x] تثبیت authorization pending actionها؛ قرارداد undo هنوز باز است
 
 ## ⬜ اسپرینت ۲ — پایداری و UX
 - [ ] reconnect با lifecycle و TTL مشخص
-- [ ] cleanup روم‌های خالی و قدیمی
+- [x] cleanup روم‌های خالی در lobby و تست lifecycle روم
 - [ ] ریسپانسیو موبایل
 - [ ] دسترس‌پذیری و keyboard navigation
 - [ ] رفع باگ‌های گزارش‌شده

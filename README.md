@@ -9,7 +9,7 @@
 - ظرفیت فعلی روم: **۲ تا ۴ بازیکن**؛ فقط چهار رنگ فعلی asset کامل دارند.
 - نگهداری روم‌ها: حافظه‌ی سرور؛ با restart شدن سرور بازی‌ها از بین می‌روند.
 - احراز هویت و حساب کاربری: وجود ندارد.
-- lint و تست‌های پایه‌ی خودکار اضافه شده‌اند؛ پوشش کامل قوانین بازی هنوز باقی است.
+- lint و تست‌های خودکار فعال‌اند؛ سرور اکنون ۱۴۸ تست دارد و پوشش کامل مسیرهای end-to-end بازی هنوز باقی است.
 - پایگاه‌داده: در نسخه‌ی فعلی استفاده نمی‌شود.
 
 ## ساختار پروژه
@@ -27,7 +27,8 @@ catan-online/
 │       ├── game/core.js    # مدل state، تخته و helperهای قوانین
 │       ├── game/engine.js  # اکشن‌های server-authoritative بازی
 │       ├── rooms.js        # مدیریت in-memory روم‌ها
-│       └── index.js        # HTTP API و رویدادهای Socket.io
+│       ├── config.js       # validation تنظیمات سرور
+│       └── index.js         # HTTP API و رویدادهای Socket.io
 ├── HANDOFF.md              # راهنمای تحویل و برنامه‌ی ادامه‌ی کار
 ├── ISSUES.md               # backlog مشکلات با اولویت و معیار پذیرش
 └── ROADMAP.md              # نقشه‌ی راه محصول
@@ -50,7 +51,7 @@ npm ci
 npm run dev
 ```
 
-سرور روی `http://localhost:4000` اجرا می‌شود و health check در مسیر `GET /health` قرار دارد.
+سرور روی `http://localhost:4000` اجرا می‌شود و health check در مسیر `GET /health` قرار دارد. این endpoint وضعیت سرویس، uptime و PID را به‌صورت JSON برمی‌گرداند. مقدار `PORT` باید عدد صحیح بین ۱ تا ۶۵۵۳۵ باشد؛ مقدار نامعتبر با warning به ۴۰۰۰ fallback می‌کند. سرور روی `SIGTERM` و `SIGINT` ابتدا Socket.io و سپس HTTP را graceful می‌بندد.
 
 ### ۲. اجرای کلاینت
 

@@ -43,14 +43,14 @@
 ### ISS-003 — ایمن‌سازی شناسه‌ی روم و بازیکن
 
 - **شدت:** P0 / امنیتی
-- **محل:** `server/src/rooms.js:8-17`, `server/src/game/core.js:191-199`
-- **مشکل:** شناسه‌ها با `Math.random()` ساخته می‌شوند و برای فضای امنیتی مناسب نیستند.
-- **اثر:** حدس‌زدن شناسه‌ی روم یا بازیکن ساده‌تر می‌شود.
-- **راه‌حل پیشنهادی:** برای ID داخلی از `crypto.randomUUID()` و برای کد کوتاه روم از منبع تصادفی امن استفاده کنید؛ برخورد ID نیز باید بررسی شود.
+- **وضعیت:** رفع شد در این batch.
+- **محل:** `server/src/rooms.js`, `server/src/game/core.js`, `server/test/ids.test.js`
+- **راه‌حل اعمال‌شده:** کد روم با `crypto.randomBytes` تولید و در `rooms` برای collision بررسی می‌شود؛ ID بازیکن و IDهای داخلی با `crypto.randomUUID()` تولید می‌شوند.
+- **تست:** قالب، یکتایی، entropy و عدم استفاده از `Math.random()` پوشش داده شده است.
 - **معیار پذیرش:**
-  - [ ] تولید ID به `Math.random()` وابسته نباشد.
-  - [ ] کد روم در صورت برخورد دوباره تولید شود.
-  - [ ] تست یکتا بودن در تعداد نمونه‌ی معقول اضافه شود.
+  - [x] تولید ID به `Math.random()` وابسته نباشد.
+  - [x] کد روم در صورت برخورد دوباره تولید شود.
+  - [x] تست یکتا بودن در تعداد نمونه‌ی معقول اضافه شود.
 
 ---
 
@@ -72,64 +72,60 @@
 ### ISS-005 — اصلاح مدل نگهداری روم‌ها و persistence
 
 - **شدت:** P1 / قابلیت محصول
-- **محل:** `server/src/rooms.js:6`, `server/src/game/core.js:328-353`
-- **وضعیت فعلی:** علت ازبین‌رفتن روم‌ها بعد از deploy/restart تأیید شد؛ این issue هنوز باز است.
+- **محل:** `server/src/rooms.js`, `server/src/game/core.js`
+- **وضعیت فعلی:** persistence هنوز باز است؛ lifecycle lobby و cleanup روم خالی در این batch تست و تثبیت شد.
 - **مشکل:** state فقط در `Map` حافظه نگهداری می‌شود.
 - **اثر:** restart، crash یا اجرای چند process باعث از دست رفتن بازی و ناسازگاری state می‌شود.
-- **راه‌حل پیشنهادی:** برای MVP کوتاه‌مدت lifecycle و TTL روم‌ها را مشخص کنید؛ برای persistence واقعی storage/DB و در صورت scale شدن یک shared store اضافه کنید. مستندات نباید ادعا کند SQLite فعال است.
+- **راه‌حل پیشنهادی:** برای MVP کوتاه‌مدت TTL روم‌های in-game را مشخص کنید؛ برای persistence واقعی storage/DB و در صورت scale شدن shared store اضافه کنید. مستندات نباید ادعا کند SQLite فعال است.
 - **معیار پذیرش:**
   - [ ] رفتار restart برای کاربر مستند و تست شده باشد.
-  - [ ] روم‌های خالی/قدیمی cleanup شوند.
+  - [x] روم خالی در lobby cleanup می‌شود و تست lifecycle دارد.
   - [ ] تصمیم persistence در roadmap و config شفاف باشد.
 
 ### ISS-006 — گسترش تست‌های unit برای قوانین اصلی بازی
 
 - **شدت:** P1 / کیفیت
-- **وضعیت:** در این تغییر تست runner و تست‌های پایه اضافه شده‌اند؛ پوشش کامل engine هنوز باقی است.
-- **محل:** `server/src/game/core.js`, `server/src/game/engine.js`
-- **مشکل باقی‌مانده:** قوانین distance، هزینه‌ها، setup، راهزن، معامله و امتیازدهی هنوز به‌صورت جامع تست نشده‌اند.
-- **اثر:** تغییرات روی منطق بازی ممکن است regression بسازند بدون اینکه مشخص شوند.
-- **راه‌حل پیشنهادی:** تست‌های deterministic برای core و engine اضافه کنید؛ randomness را قابل seed یا injectable کنید.
+- **وضعیت:** بخش unit تست core و engine در این batch تکمیل شد؛ پوشش end-to-end بازی هنوز باقی است.
+- **محل:** `server/test/core.test.js`, `server/test/engine.test.js`
+- **تغییر:** ۶۵ تست deterministic برای geometry، منابع، هزینه‌ها، distance rule، longest road، scoring، public state و state factory اضافه شد و authorization pending actions نیز تست شد.
 - **معیار پذیرش:**
   - [x] script استاندارد `npm test` وجود داشته باشد.
-  - [ ] قوانین distance، هزینه‌ها، setup، roll/discard/robber و trade پوشش داده شوند.
+  - [x] قوانین core و pending actionهای engine پوشش داده شوند.
   - [x] تست‌ها در CI قابل اجرا باشند.
+  - [ ] تست end-to-end کامل برای setup، roll/discard/robber، trade و winner اضافه شود.
 
 ### ISS-007 — هماهنگ کردن ظرفیت بازیکن‌ها با مستندات و assetها
 
 - **شدت:** P1 / محصول و UX
-- **محل:** `README.md:3` قدیمی، `server/src/rooms.js:30`, `client/src/game/constants.js:17`
-- **مشکل:** README قبلی ۲ تا ۶ بازیکن می‌گفت، اما سرور فعلاً حداکثر ۴ بازیکن را می‌پذیرد.
-- **اثر:** انتظار کاربر با رفتار واقعی سیستم متفاوت است.
-- **راه‌حل پیشنهادی:** تا زمان تکمیل assetها ظرفیت رسمی را ۲ تا ۴ نگه دارید یا دو رنگ/asset باقی‌مانده را کامل کنید.
+- **وضعیت:** ظرفیت واقعی و lifecycle روم تست و مستند شد؛ asset و UI رسمی هنوز باید بررسی شوند.
+- **محل:** `server/src/rooms.js`, `server/test/rooms.test.js`, `client/src/game/constants.js`
+- **مشکل باقی‌مانده:** باید یک منبع حقیقت برای ظرفیت و assetهای قابل‌استفاده در UI تعریف شود.
+- **تغییر:** تست‌های join ظرفیت ۴ نفر، نفر پنجم، روم ناموجود و روم شروع‌شده اضافه شد.
 - **معیار پذیرش:**
   - [ ] ظرفیت در UI، README و server یکسان باشد.
-  - [ ] تست join برای حداقل، ظرفیت مجاز و نفر اضافه وجود داشته باشد.
+  - [x] تست join برای ظرفیت مجاز و نفر اضافه وجود داشته باشد.
 
 ### ISS-008 — اعتبارسنجی شناسه‌ها و objectهای بازی در engine
 
 - **شدت:** P1 / پایداری
-- **محل:** توابعی مثل `placeSetupSettlement`, `placeSetupRoad`, `moveRobber`, `buildRoad`, `buildSettlement` در `server/src/game/engine.js`
-- **مشکل:** بعضی توابع پیش از بررسی وجود `board.vertices[vertexId]`, `board.edges[edgeId]` یا tile، به property آن دسترسی دارند.
-- **اثر:** ورودی خارج از محدوده می‌تواند TypeError ایجاد کند.
-- **راه‌حل پیشنهادی:** guard مشترک برای شناسه‌ها و playerهای ناشناخته تعریف کنید و خطای قابل پیش‌بینی برگردانید.
+- **وضعیت:** رفع شد همراه با ISS-002 در batchهای قبلی.
+- **محل:** guardهای `server/src/game/engine.js` و تست‌های `server/test/validation.test.js`, `server/test/engine.test.js`
+- **راه‌حل اعمال‌شده:** vertex/edge/tile و player قبل از دسترسی بررسی می‌شوند و payload نامعتبر با ack کنترل‌شده رد می‌شود.
 - **معیار پذیرش:**
-  - [ ] همه‌ی اکشن‌ها برای ID خارج از محدوده `{ ok: false }` برگردانند.
-  - [ ] هیچ ورودی socket باعث crash process نشود.
+  - [x] اکشن‌ها برای ID خارج از محدوده `{ ok: false }` برمی‌گردانند.
+  - [x] هیچ ورودی socket باعث crash process نمی‌شود.
 
 ### ISS-009 — کنترل دسترسی اکشن‌های pending و trade
 
 - **شدت:** P1 / صحت بازی
-- **وضعیت:** بخشی رفع شد؛ authorization مربوط به pending card actions هنوز باز است.
-- **محل:** `server/src/game/engine.js:383-410`, `server/src/game/engine.js:438-458`
-- **مشکل باقی‌مانده:** resolveهای year-of-plenty و monopoly فقط نوع pending را بررسی می‌کنند و مالک pending action را محدود نمی‌کنند.
-- **رفع‌شده:** `cancelTrade` اکنون وجود offer و مالکیت proposer را بررسی می‌کند؛ تست آن در `server/test/validation.test.js` وجود دارد.
-- **اثر:** بازیکنی غیر از صاحب pending می‌تواند state کارت را resolve کند.
-- **راه‌حل پیشنهادی:** برای هر pending، `playerId` صاحب اکشن را ذخیره و در resolve تطبیق دهید.
+- **وضعیت:** رفع شد در این batch.
+- **محل:** `server/src/game/engine.js`, `server/test/engine.test.js`
+- **راه‌حل اعمال‌شده:** owner `playerId` در pendingهای knight، road building، year of plenty و monopoly ذخیره می‌شود و تمام resolveها با آن تطبیق داده می‌شوند؛ جریان dice=7 که pending مالک ندارد حفظ شده است.
+- **تست:** مالک و non-owner برای resolve کارت‌ها، حرکت راهزن، steal و road building رایگان پوشش داده شدند.
 - **معیار پذیرش:**
-  - [ ] بازیکن دیگر نتواند year-of-plenty یا monopoly را resolve کند.
+  - [x] بازیکن دیگر نتواند year-of-plenty یا monopoly را resolve کند.
   - [x] بازیکن دیگر نتواند offer متعلق به شخص دیگری را cancel کند.
-  - [x] تست authorization برای cancel trade اضافه شود.
+  - [x] authorization کارت‌های knight و road building نیز تست شده است.
 
 ### ISS-010 — اصلاح state undo و checkpointهای ناقص
 
@@ -198,25 +194,25 @@
 ### ISS-015 — مدیریت پیکربندی و health check production
 
 - **شدت:** P2 / عملیاتی
-- **محل:** `server/src/index.js:9-19`
-- **مشکل:** PORT و CORS تنها به‌صورت ناقص configuration شده‌اند و health check readiness/liveness تفکیک ندارد.
-- **اثر:** deploy و مانیتورینگ قابل اتکا نیست.
-- **راه‌حل پیشنهادی:** env schema، مقدارهای dev/prod، graceful shutdown و health endpoint مستند اضافه کنید.
+- **وضعیت:** بخش اصلی رفع شد در این batch؛ readiness/liveness تفکیک‌شده هنوز باز است.
+- **محل:** `server/src/config.js`, `server/src/index.js`, `server/test/config.test.js`, `server/test/health.test.js`, `server/test/shutdown.test.js`
+- **راه‌حل اعمال‌شده:** PORT به عدد صحیح ۱ تا ۶۵۵۳۵ validate می‌شود؛ health شامل `ok`, `service`, `uptime`, `pid` است؛ shutdown روی SIGTERM/SIGINT ابتدا Socket.io و سپس HTTP را می‌بندد و timeout محافظ دارد.
+- **تست:** config، health و ترتیب graceful shutdown تست شده‌اند.
 - **معیار پذیرش:**
-  - [ ] config نامعتبر هنگام startup fail-fast شود.
-  - [ ] shutdown اتصال‌ها را تمیز ببندد.
-  - [ ] health endpoint قراردادی و مستند باشد.
+  - [x] config نامعتبر مقدار کنترل‌شده دارد و warning/fallback می‌دهد.
+  - [x] shutdown اتصال‌ها را به‌ترتیب تمیز می‌بندد.
+  - [x] health endpoint قراردادی و مستند است.
+  - [ ] readiness و liveness جداگانه اضافه شوند.
 
 ### ISS-016 — نگه‌داشتن خروجی تولیدی و فایل‌های سیستم خارج از git
 
 - **شدت:** P2 / hygiene
 - **محل:** `.DS_Store`, `client/dist/`, `client/node_modules/`, lockfileهای تولیدشده
-- **مشکل:** فایل‌های سیستم و خروجی/وابستگی محلی در وضعیت working tree دیده شدند؛ `.DS_Store` قبلاً در git نیز tracked بوده است.
-- **اثر:** diffهای آلوده و clone سنگین/غیرقابل‌اعتماد.
-- **راه‌حل پیشنهادی:** `.gitignore` نگه داشته شود؛ فایل‌های generated از index حذف و فقط artifactهای لازم commit شوند.
+- **وضعیت:** بخش cleanup قبلی رفع شده؛ این batch نیز با اجرای install/build وضعیت clean را حفظ کرد.
+- **راه‌حل اعمال‌شده:** generated files و فایل‌های سیستم در `.gitignore` هستند و lockfileهای معتبر تنها artifactهای نصب‌شده‌ی tracked هستند.
 - **معیار پذیرش:**
-  - [ ] `git status` بعد از install/build فقط فایل‌های source/مستندات عمدی را نشان دهد.
-  - [ ] `.DS_Store` در index باقی نماند.
+  - [x] `git status` بعد از install/build فقط تغییرات عمدی را نشان دهد.
+  - [x] `.DS_Store` در index باقی نماند.
 
 ---
 

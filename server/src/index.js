@@ -1,14 +1,17 @@
 import express from "express";
 import http from "http";
 import cors from "cors";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { Server } from "socket.io";
 import { createRoom, joinRoom, getRoom, markDisconnected, markReconnected } from "./rooms.js";
 import { publicGameState } from "./game/core.js";
 import * as engine from "./game/engine.js";
 import { createCorsOptions, getAllowedOrigins } from "./cors.js";
 import { validatePayload } from "./validation.js";
+import { getPort } from "./config.js";
 
-const PORT = process.env.PORT || 4000;
+const PORT = getPort();
 const allowedOrigins = getAllowedOrigins();
 const corsOptions = createCorsOptions(allowedOrigins);
 
@@ -19,7 +22,7 @@ if (process.env.NODE_ENV === "production" && !process.env.CLIENT_ORIGIN) {
 const app = express();
 app.use(cors(corsOptions));
 app.use(express.json());
-app.get("/health", (req, res) => res.json({ ok: true, service: "catan-server" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "catan-server", uptime: Math.round(process.uptime()), pid: process.pid }));
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -145,6 +148,43 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Catan server listening on http://localhost:${PORT}`);
-});
+// ── Graceful shutdown ────────────────────────────────────────────────
+// Closes Socket.io first (so in-flight events drain), then the HTTP
+// server.  A 10 s fallback timer prevents hanging forever.
+export function gracefulShutdown(server, io, signal) {
+  console.log(`\nReceived ${signal}. Shutting down gracefully…`);
+  let done = false;
+  const forceExit = setTimeout(() => {
+    if (done) return;
+    done = true;
+    console.error("Forced shutdown after timeout.");
+    process.exit(1);
+  }, 10_000);
+
+  io.close(() => {
+    console.log("Socket.io connections closed.");
+    server.close(() => {
+      if (done) return;
+      done = true;
+      clearTimeout(forceExit);
+      console.log("HTTP server closed.");
+      process.exit(0);
+    });
+  });
+}
+
+process.on("SIGTERM", () => gracefulShutdown(server, io, "SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown(server, io, "SIGINT"));
+
+// Only auto-listen when this file is the direct entry point (`node
+// src/index.js` or `nodemon src/index.js`), not when imported by tests.
+const argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isMain = argv1 === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  server.listen(PORT, () => {
+    console.log(`Catan server listening on http://localhost:${PORT}`);
+  });
+}
+
+export { app, server, io };

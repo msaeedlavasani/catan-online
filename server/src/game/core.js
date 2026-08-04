@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 
 export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
 export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
@@ -190,12 +191,13 @@ export function assignBoardContent(geo) {
 /* ============================== GAME LOGIC HELPERS ============================== */
 export function newGameId() {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(5);
   let s = "";
-  for (let i = 0; i < 5; i++) s += letters[Math.floor(Math.random() * letters.length)];
+  for (let i = 0; i < 5; i++) s += letters[bytes[i] % letters.length];
   return s;
 }
 export function newId() {
-  return Math.random().toString(36).slice(2, 10);
+  return crypto.randomUUID();
 }
 export function emptyResources() {
   return { wood: 0, brick: 0, wheat: 0, sheep: 0, ore: 0 };

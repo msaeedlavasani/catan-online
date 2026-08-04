@@ -256,6 +256,7 @@ export function moveRobber(g, playerId, tileId) {
   if (!validBoardId(g, "tile", tileId)) return fail("Invalid tile.");
   if (!g.pending || g.pending.type !== "robberMove") return fail("No robber move pending.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
+  if (g.pending.playerId && g.pending.playerId !== playerId) return fail("Not your pending action.");
   if (tileId === g.robberTileId) return fail("Robber must move to a different tile.");
   g.robberTileId = tileId;
   const tile = g.board.tiles[tileId];
@@ -269,7 +270,7 @@ export function moveRobber(g, playerId, tileId) {
     });
   });
   g.log.push(`${g.players[g.currentPlayerIndex].name} راهزن رو جابه‌جا کرد.`);
-  g.pending = victims.size === 0 ? null : { type: "robberSteal", victims: [...victims] };
+  g.pending = victims.size === 0 ? null : { type: "robberSteal", victims: [...victims], playerId: g.pending.playerId };
   if (!g.pending) refreshCheckpoint(g);
   return OK;
 }
@@ -277,6 +278,7 @@ export function moveRobber(g, playerId, tileId) {
 export function stealFrom(g, playerId, victimId) {
   if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!g.pending || g.pending.type !== "robberSteal") return fail("No steal pending.");
+  if (g.pending.playerId && g.pending.playerId !== playerId) return fail("Not your pending action.");
   if (!g.pending.victims.includes(victimId)) return fail("Invalid victim.");
   const thief = g.players.find((p) => p.id === playerId);
   const victim = g.players.find((p) => p.id === victimId);
@@ -301,6 +303,7 @@ export function buildRoad(g, playerId, edgeId) {
   if (!edgeIsFree(edgeId, g.players)) return fail("Edge already has a road.");
   if (!playerOwnsEdgeVertexOrRoad(g.board, edgeId, player)) return fail("Road must connect to your network.");
   const free = g.pending && g.pending.type === "roadBuildingFree";
+  if (free && g.pending.playerId !== playerId) return fail("Not your pending action.");
   if (!free) {
     if (!canAfford(player.resources, BUILD_COST.road)) return fail("Not enough resources.");
     player.resources = payCost(player.resources, BUILD_COST.road);
@@ -378,7 +381,7 @@ export function playDevCard(g, playerId, cardId, type) {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     player.knightsPlayed += 1;
     g.hasPlayedDevCardThisTurn = true;
-    g.pending = { type: "robberMove" };
+    g.pending = { type: "robberMove", playerId };
     g.log.push(`${player.name} کارت شوالیه رو بازی کرد.`);
     let bestPid = g.largestArmyPlayerId;
     let bestCount = bestPid ? g.players.find((p) => p.id === bestPid).knightsPlayed : 2;
@@ -394,17 +397,17 @@ export function playDevCard(g, playerId, cardId, type) {
   } else if (type === "roadBuilding") {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
-    g.pending = { type: "roadBuildingFree", remaining: 2 };
+    g.pending = { type: "roadBuildingFree", remaining: 2, playerId };
     g.log.push(`${player.name} کارت جاده‌سازی رو بازی کرد.`);
   } else if (type === "yearOfPlenty") {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
-    g.pending = { type: "yearOfPlenty" };
+    g.pending = { type: "yearOfPlenty", playerId };
     g.log.push(`${player.name} کارت سال فراوانی رو بازی کرد.`);
   } else if (type === "monopoly") {
     player.devCards = player.devCards.filter((c) => c.id !== cardId);
     g.hasPlayedDevCardThisTurn = true;
-    g.pending = { type: "monopoly" };
+    g.pending = { type: "monopoly", playerId };
     g.log.push(`${player.name} کارت انحصار رو بازی کرد.`);
   } else {
     return fail("Unknown card type.");
@@ -415,6 +418,7 @@ export function playDevCard(g, playerId, cardId, type) {
 export function resolveYearOfPlenty(g, playerId, picks) {
   if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!g.pending || g.pending.type !== "yearOfPlenty") return fail("Nothing to resolve.");
+  if (g.pending.playerId !== playerId) return fail("Not your pending action.");
   const player = getPlayer(g, playerId);
   const need = {};
   picks.forEach((r) => (need[r] = (need[r] || 0) + 1));
@@ -431,6 +435,7 @@ export function resolveMonopoly(g, playerId, resource) {
   if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!isKnownResource(resource)) return fail("Invalid resource.");
   if (!g.pending || g.pending.type !== "monopoly") return fail("Nothing to resolve.");
+  if (g.pending.playerId !== playerId) return fail("Not your pending action.");
   const player = getPlayer(g, playerId);
   let total = 0;
   g.players.forEach((p) => {

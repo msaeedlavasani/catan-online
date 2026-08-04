@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { createLobbyState, newPlayer } from "./game/core.js";
 
 // In-memory room storage. Fine for Sprint 1 (single server process);
@@ -5,15 +6,20 @@ import { createLobbyState, newPlayer } from "./game/core.js";
 
 const rooms = new Map();
 
+// 5-character room code: readable (no ambiguous 0/O/I/1), crypto-random,
+// regenerates on collision so two rooms never share the same code.
 function newRoomId() {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(5);
   let s = "";
-  for (let i = 0; i < 5; i++) s += letters[Math.floor(Math.random() * letters.length)];
+  for (let i = 0; i < 5; i++) s += letters[bytes[i] % letters.length];
+  if (rooms.has(s)) return newRoomId(); // collision — try again
   return s;
 }
 
+// Internal player id: crypto-random UUID (unguessable, 128-bit).
 function cryptoId() {
-  return Math.random().toString(36).slice(2, 10);
+  return crypto.randomUUID();
 }
 
 export function createRoom(playerName) {
@@ -59,4 +65,10 @@ export function markReconnected(roomId, playerId) {
 
 export function getRoom(roomId) {
   return rooms.get(roomId) || null;
+}
+
+// Only for tests: reset the shared in-memory room store between test cases
+// so state from one test does not leak into another.
+export function _resetRoomsForTest() {
+  rooms.clear();
 }

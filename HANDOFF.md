@@ -19,13 +19,15 @@
 | نصب dependencyها | در محیط بررسی موفق |
 | build کلاینت | موفق |
 | اجرای server syntax check | موفق |
-| تست خودکار | تست‌های پایه موجود؛ پوشش کامل engine باقی است |
+| تست خودکار | ۱۴۸ تست server و ۷ تست client؛ پوشش کامل end-to-end باقی است |
 | lint/format | ESLint فعال؛ formatter هنوز باقی است |
 | CI | GitHub Actions برای lint/test/build/syntax اضافه شده |
 | persistence | وجود ندارد؛ state در memory است |
 | احراز هویت | وجود ندارد |
 | CORS production-safe | allowlist با `CLIENT_ORIGIN` فعال است |
 | ظرفیت فعلی روم | ۲ تا ۴ نفر |
+| IDهای روم/بازیکن | crypto-random؛ کد روم collision-aware و player UUID v4 |
+| عملیات سرور | PORT validation، health metadata و graceful shutdown فعال |
 
 ## ۳. معماری فعلی
 
@@ -42,7 +44,7 @@
 
 ### Server
 
-`server/src/index.js` مسئول HTTP، health check و event handlerهای Socket.io است.
+`server/src/index.js` مسئول HTTP، health check، graceful shutdown و event handlerهای Socket.io است. `server/src/config.js` مقدار `PORT` را validate می‌کند. تست‌های lifecycle در `server/test/health.test.js`, `server/test/shutdown.test.js` و `server/test/rooms.test.js` قرار دارند.
 
 - `rooms.js`: نگهداری روم‌ها در `Map` و مدیریت create/join/reconnect/disconnect.
 - `game/core.js`: مدل state، ساخت هندسه‌ی تخته، منابع، امتیاز و state عمومی.
@@ -111,8 +113,8 @@ node --check src/game/engine.js
 
 - CORS با allowlist قابل‌پیکربندی کنترل می‌شود؛ پیش‌فرض development فقط `http://localhost:5173` است.
 - ورودی‌های Socket.io اکنون با validation مرکزی بررسی می‌شوند؛ پوشش کامل contractهای بازی هنوز باید توسعه پیدا کند.
-- شناسه‌های روم/بازیکن با `Math.random()` ساخته می‌شوند.
-- authorization برای pending actionهای سال فراوانی و انحصار کامل نیست؛ مالکیت cancel trade بررسی می‌شود.
+- شناسه‌های روم و بازیکن با crypto تولید می‌شوند؛ کد روم collision-aware و player ID از UUID v4 استفاده می‌کند.
+- authorization برای pending actionهای کارت توسعه و مالکیت cancel trade بررسی می‌شود؛ پوشش end-to-end کامل بازی هنوز باقی است.
 
 ### صحت state
 
@@ -124,7 +126,7 @@ node --check src/game/engine.js
 
 - constants بین client و server تکرار شده‌اند.
 - متن‌ها و labelها در دو زبان/منبع جدا قرار دارند.
-- ESLint، تست‌های پایه و CI فعال هستند؛ formatter و پوشش کامل قوانین هنوز باقی است.
+- ESLint، ۱۴۸ تست server، ۷ تست client و CI فعال هستند؛ formatter و پوشش کامل end-to-end هنوز باقی است.
 - lockfileهای client/server tracked هستند؛ audit و به‌روزرسانی دوره‌ای dependencyها همچنان لازم است.
 
 ## ۷. ترتیب پیشنهادی برای ادامه‌ی کار
@@ -139,15 +141,15 @@ node --check src/game/engine.js
 ### فاز یک — امنیت و ورودی‌ها
 
 1. [x] افزودن validation مرکزی برای event payloadها.
-2. امن کردن IDها.
+2. [x] امن کردن IDها.
 3. [x] اضافه کردن guard برای vertex/edge/tile/player.
-4. کامل کردن authorization برای pending actionها و trade.
+4. [x] کامل کردن authorization برای pending actionها و trade.
 
 ### فاز دو — تست و تثبیت قوانین
 
-1. تست unit برای `core.js` و `engine.js`.
-2. تست integration برای Socket.io و health check.
-3. پوشش setup، منابع، تاس ۷، discard، robber، build، trade، dev cards، longest road و winner.
+1. [x] تست unit برای `core.js` و `engine.js`.
+2. [x] تست lifecycle روم و health check.
+3. پوشش setup، منابع، تاس ۷، discard، robber، build، trade، dev cards، longest road و winner به‌صورت end-to-end.
 4. تصمیم و تست رسمی undo.
 
 ### فاز سه — tooling و CI
