@@ -12,7 +12,15 @@ import {
 } from "lucide-react";
 import { socket, SERVER_URL } from "./socket.js";
 import { styles } from "./styles.js";
-import { PARCHMENT, RES_COLOR, RES_LABEL, RESOURCE_TYPES, DEV_LABEL } from "./game/constants.js";
+import {
+  PARCHMENT,
+  RES_COLOR,
+  RES_LABEL,
+  RESOURCE_TYPES,
+  DEV_LABEL,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+} from "./game/constants.js";
 import { emptyResources, getSuggestions } from "./game/helpers.js";
 import BoardSVG from "./components/BoardSVG.jsx";
 import { ResourceIcon } from "./components/ResourceGlyphs.jsx";
@@ -301,7 +309,9 @@ export default function App() {
               {copyOk ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
-          <p style={styles.subtitle}>این کد رو به بقیه بده. ۲ تا ۴ ملوان می‌تونن بپیوندن.</p>
+          <p style={styles.subtitle}>
+            این کد رو به بقیه بده. {MIN_PLAYERS} تا {MAX_PLAYERS} ملوان می‌تونن بپیوندن.
+          </p>
           <div style={styles.playerList}>
             {game.players.map((p, i) => (
               <div key={p.id} style={styles.playerRow}>
@@ -318,9 +328,9 @@ export default function App() {
             <button
               style={styles.primaryBtn}
               onClick={() => act("startGame")}
-              disabled={game.players.length < 2}
+              disabled={game.players.length < MIN_PLAYERS}
             >
-              {game.players.length < 2 ? "در انتظار بازیکنای بیشتر…" : "شروع بازی ⛵"}
+              {game.players.length < MIN_PLAYERS ? "در انتظار بازیکنای بیشتر…" : "شروع بازی ⛵"}
             </button>
           ) : (
             <p style={styles.subtitle}>در انتظار شروع بازی توسط میزبان…</p>

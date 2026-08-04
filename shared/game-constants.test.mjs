@@ -5,7 +5,14 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { RESOURCE_TYPES, BUILD_COST } from "./game-constants.mjs";
+import {
+  RESOURCE_TYPES,
+  BUILD_COST,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  PLAYER_COLORS,
+  COLOR_ASSET_NAME,
+} from "./game-constants.mjs";
 
 describe("shared/game-constants (contract)", () => {
   describe("RESOURCE_TYPES", () => {
@@ -54,6 +61,79 @@ describe("shared/game-constants (contract)", () => {
     it("is frozen (immutable)", () => {
       assert.throws(() => { BUILD_COST.road.wood = 99; }, TypeError);
       assert.throws(() => { BUILD_COST.foo = {}; }, TypeError);
+    });
+  });
+
+  // ── Player capacity and color/asset mapping (Batch 3.3) ──────────
+
+  describe("MAX_PLAYERS / MIN_PLAYERS", () => {
+    it("MAX_PLAYERS is 4 (matching available piece art)", () => {
+      assert.equal(MAX_PLAYERS, 4);
+    });
+
+    it("MIN_PLAYERS is 2", () => {
+      assert.equal(MIN_PLAYERS, 2);
+    });
+
+    it("MIN_PLAYERS is less than MAX_PLAYERS", () => {
+      assert.ok(MIN_PLAYERS < MAX_PLAYERS);
+    });
+
+    it("both are positive integers", () => {
+      assert.ok(Number.isInteger(MAX_PLAYERS) && MAX_PLAYERS > 0);
+      assert.ok(Number.isInteger(MIN_PLAYERS) && MIN_PLAYERS > 0);
+    });
+  });
+
+  describe("PLAYER_COLORS", () => {
+    it("has exactly MAX_PLAYERS entries", () => {
+      assert.equal(PLAYER_COLORS.length, MAX_PLAYERS);
+    });
+
+    it("contains the four canonical Catan player colors", () => {
+      assert.deepEqual(PLAYER_COLORS, ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]);
+    });
+
+    it("is frozen (immutable)", () => {
+      assert.throws(() => { PLAYER_COLORS[0] = "#000000"; }, TypeError);
+      assert.throws(() => { PLAYER_COLORS.push("#000000"); }, TypeError);
+    });
+
+    it("every entry is a valid 7-character hex color", () => {
+      const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+      PLAYER_COLORS.forEach((c) => assert.match(c, HEX_RE, `not a hex color: ${c}`));
+    });
+
+    it("all colors are unique", () => {
+      assert.equal(new Set(PLAYER_COLORS).size, PLAYER_COLORS.length);
+    });
+  });
+
+  describe("COLOR_ASSET_NAME", () => {
+    it("maps every PLAYER_COLORS entry to a name", () => {
+      PLAYER_COLORS.forEach((c) => {
+        assert.ok(c in COLOR_ASSET_NAME, `no asset name for color ${c}`);
+        assert.equal(typeof COLOR_ASSET_NAME[c], "string");
+      });
+    });
+
+    it("does not map colors outside PLAYER_COLORS", () => {
+      const colorSet = new Set(PLAYER_COLORS);
+      for (const key of Object.keys(COLOR_ASSET_NAME)) {
+        assert.ok(colorSet.has(key), `COLOR_ASSET_NAME maps unknown color: ${key}`);
+      }
+    });
+
+    it("is frozen (immutable)", () => {
+      assert.throws(() => { COLOR_ASSET_NAME["#b23a2e"] = "pink"; }, TypeError);
+      assert.throws(() => { COLOR_ASSET_NAME["#ffffff"] = "white"; }, TypeError);
+    });
+
+    it("asset names match the piece-art directories", () => {
+      const validNames = new Set(["red", "blue", "orange", "green"]);
+      for (const name of Object.values(COLOR_ASSET_NAME)) {
+        assert.ok(validNames.has(name), `unknown asset name: ${name}`);
+      }
     });
   });
 });

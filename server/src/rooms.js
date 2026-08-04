@@ -1,9 +1,16 @@
 import crypto from "node:crypto";
-import { createLobbyState, newPlayer } from "./game/core.js";
+import { createLobbyState, newPlayer, MAX_PLAYERS } from "./game/core.js";
 import { getRoomTTL } from "./config.js";
+import {
+  saveRoom,
+  loadAllRooms,
+  deleteRoom as deleteRoomFromDisk,
+} from "./storage.js";
 
-// In-memory room storage. Fine for Sprint 1 (single server process);
-// Sprint 3+ will move persistence to the database for reconnect/history.
+// In-memory room storage — the primary / source-of-truth store.
+// Persistence (Batch 3.1) mirrors mutations to disk asynchronously
+// so the server can recover rooms after a restart.  The in-memory
+// Map always wins; disk is a durable copy, not the authority.
 
 const rooms = new Map();
 
@@ -30,12 +37,21 @@ function allDisconnected(game) {
   return game.players.every((p) => !p.connected);
 }
 
+/**
+ * Delete a room from both memory AND disk.  Called when a room is
+ * permanently removed (lobby becomes empty, TTL expires).
+ */
+function _deleteRoom(roomId) {
+  rooms.delete(roomId);
+  pendingCleanups.delete(roomId);
+  deleteRoomFromDisk(roomId); // fire-and-forget (best-effort)
+}
+
 export function _scheduleCleanup(roomId) {
   _cancelCleanup(roomId); // idempotent — replace any existing timer
   const ttl = _effectiveTTL();
   const timer = setTimeout(() => {
-    rooms.delete(roomId);
-    pendingCleanups.delete(roomId);
+    _deleteRoom(roomId);
   }, ttl);
   // A pending cleanup must not keep an otherwise idle server/test process alive.
   // The timer still fires normally while the process has other active work.
@@ -69,12 +85,58 @@ function cryptoId() {
   return crypto.randomUUID();
 }
 
+// ── Persistence helpers ─────────────────────────────────────────────
+// Mutations that change room state trigger a best-effort save.  Failures
+// are logged but never surface to callers — the in-memory store is the
+// authority.
+
+function _persist(room) {
+  saveRoom(room).catch((err) => {
+    console.error(`[rooms] persist ${room.gameId} failed:`, err.message);
+  });
+}
+
+/**
+ * Load all rooms from disk into the in-memory Map.  Called once at
+ * server startup.  Returns the number of rooms loaded.
+ *
+ * Existing in-memory rooms are NOT overwritten — this is additive.
+ * Duplicate roomIds (should not happen) are skipped.
+ */
+export async function loadRoomsFromDisk() {
+  try {
+    const entries = await loadAllRooms();
+    let count = 0;
+    for (const { roomId, room } of entries) {
+      if (!rooms.has(roomId)) {
+        // Re-hydrate: mark all players as disconnected so they need to
+        // explicitly rejoin/reconnect after restart.
+        if (room.players) {
+          for (const p of room.players) {
+            p.connected = false;
+          }
+        }
+        rooms.set(roomId, room);
+        count++;
+      }
+    }
+    if (count > 0) {
+      console.log(`[rooms] Restored ${count} room(s) from disk`);
+    }
+    return count;
+  } catch (err) {
+    console.error(`[rooms] Failed to load rooms from disk: ${err.message}`);
+    return 0;
+  }
+}
+
 // ── Public API ──────────────────────────────────────────────────────
 
 export function createRoom(playerName) {
   const player = newPlayer(playerName || "Player", cryptoId());
   const game = createLobbyState(newRoomId(), player);
   rooms.set(game.gameId, game);
+  _persist(game);
   return { room: game, player };
 }
 
@@ -82,10 +144,11 @@ export function joinRoom(roomId, playerName) {
   const game = rooms.get(roomId);
   if (!game) return null;
   if (game.phase !== "lobby") return null;
-  if (game.players.length >= 4) return null; // only 4 player colors have matching art
+  if (game.players.length >= MAX_PLAYERS) return null; // lobe capacity reached
   const player = newPlayer(playerName || "Player", cryptoId());
   game.players.push(player);
   game.log.push(`${player.name} به بازی پیوست.`);
+  _persist(game);
   return { room: game, player };
 }
 
@@ -98,7 +161,7 @@ export function markDisconnected(roomId, playerId) {
     game.players = game.players.filter((p) => p.id !== playerId);
     if (game.players.length === 0) {
       _cancelCleanup(roomId);
-      rooms.delete(roomId);
+      _deleteRoom(roomId);
       return null;
     }
   } else {
@@ -108,6 +171,7 @@ export function markDisconnected(roomId, playerId) {
       _scheduleCleanup(roomId);
     }
   }
+  _persist(game);
   return game;
 }
 
@@ -119,6 +183,7 @@ export function markReconnected(roomId, playerId) {
     player.connected = true;
     _cancelCleanup(roomId); // cancel any pending cleanup timer
   }
+  _persist(game);
   return game;
 }
 

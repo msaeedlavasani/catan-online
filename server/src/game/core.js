@@ -1,10 +1,16 @@
 import crypto from "node:crypto";
 
-import { BUILD_COST, RESOURCE_TYPES } from "../../../shared/game-constants.mjs";
-export { BUILD_COST, RESOURCE_TYPES };
+import {
+  BUILD_COST,
+  RESOURCE_TYPES,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  PLAYER_COLORS,
+  COLOR_ASSET_NAME,
+} from "../../../shared/game-constants.mjs";
+export { BUILD_COST, RESOURCE_TYPES, MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS, COLOR_ASSET_NAME };
 
 export const RES_LABEL = { wood: "چوب", brick: "آجر", wheat: "گندم", sheep: "پشم", ore: "سنگ‌معدن", desert: "کویر" };
-export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
 /* ============================== BOARD MATH ============================== */
 export function axialHexes(radius) {

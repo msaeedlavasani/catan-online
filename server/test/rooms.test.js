@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assignBoardContent, buildBoardGeometry } from "../src/game/core.js";
+import { assignBoardContent, buildBoardGeometry, MAX_PLAYERS } from "../src/game/core.js";
 import {
   createRoom,
   joinRoom,
@@ -102,27 +102,23 @@ test("joinRoom logs the join event", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// joinRoom — capacity (max 4)
+// joinRoom — capacity (MAX_PLAYERS from shared constants)
 // ═══════════════════════════════════════════════════════════════════════════
 
-test("joinRoom fills up to 4 players then rejects the 5th", () => {
+test("joinRoom fills up to MAX_PLAYERS players then rejects the overflow", () => {
   setup();
   const { room } = createRoom("P1");
   assert.equal(room.players.length, 1);
 
-  assert.ok(joinRoom(room.gameId, "P2"));
-  assert.equal(room.players.length, 2);
+  for (let i = 2; i <= MAX_PLAYERS; i++) {
+    assert.ok(joinRoom(room.gameId, `P${i}`));
+    assert.equal(room.players.length, i);
+  }
 
-  assert.ok(joinRoom(room.gameId, "P3"));
-  assert.equal(room.players.length, 3);
-
-  assert.ok(joinRoom(room.gameId, "P4"));
-  assert.equal(room.players.length, 4);
-
-  // 5th player should be rejected
-  const fifth = joinRoom(room.gameId, "P5");
-  assert.equal(fifth, null);
-  assert.equal(room.players.length, 4);
+  // One more than capacity should be rejected
+  const overflow = joinRoom(room.gameId, "Overflow");
+  assert.equal(overflow, null);
+  assert.equal(room.players.length, MAX_PLAYERS);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

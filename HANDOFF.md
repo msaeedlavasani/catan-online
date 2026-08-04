@@ -7,7 +7,7 @@
 - **Client:** React 18 + Vite + Socket.io Client
 - **Server:** Node.js ESM + Express + Socket.io
 
-وضعیت فعلی برای ادامه‌ی توسعه مناسب است، اما هنوز باید به‌عنوان یک prototype/MVP ناتمام در نظر گرفته شود. build کلاینت موفق است و lint، تست‌های پایه، CI و syntax check اضافه شده‌اند؛ با این حال تست کامل قوانین، persistence و قابلیت‌های production هنوز باقی هستند.
+وضعیت فعلی برای ادامه‌ی توسعه مناسب است، اما هنوز باید به‌عنوان یک prototype/MVP ناتمام در نظر گرفته شود. build کلاینت موفق است و lint، تست‌های unit/integration، persistence فایل، CI و syntax check اضافه شده‌اند؛ با این حال پوشش کامل product flow و shared database/multi-process persistence هنوز باقی است.
 
 فهرست کارهای قابل تبدیل به issue در [`ISSUES.md`](./ISSUES.md) قرار دارد.
 
@@ -19,15 +19,16 @@
 | نصب dependencyها | در محیط بررسی موفق |
 | build کلاینت | موفق |
 | اجرای server syntax check | موفق |
-| تست خودکار | ۲۰۴ تست server و ۷ تست client؛ پوشش کامل end-to-end باقی است |
-| lint/format | ESLint و Prettier format check فعال؛ formatter هنوز auto-format workflow ندارد |
-| CI | GitHub Actions برای format/lint/test/build/syntax و shared contract test فعال است |
-| persistence | وجود ندارد؛ state در memory است |
+| تست خودکار | ۲۴۹ تست server، ۴۵ تست integration/persistence، ۶۲ تست shared و ۷ تست client؛ پوشش کامل product end-to-end باقی است |
+| lint/format | ESLint و Prettier format check فعال |
+| CI | GitHub Actions با shared gate، concurrency، format/lint/test/build/syntax فعال است |
+| persistence | mirror اتمیک JSON و load در startup فعال؛ database/multi-process store وجود ندارد |
 | احراز هویت | وجود ندارد |
 | CORS production-safe | allowlist با `CLIENT_ORIGIN` فعال است |
-| ظرفیت فعلی روم | ۲ تا ۴ نفر |
+| ظرفیت فعلی روم | ۲ تا ۴ نفر از shared source of truth |
 | IDهای روم/بازیکن | crypto-random؛ کد روم collision-aware و player UUID v4 |
-| عملیات سرور | PORT validation، TTL روم، health/live/ready و graceful shutdown فعال |
+| عملیات سرور | PORT/TTL/storage config، health/live/ready و graceful shutdown فعال |
+| integration | دو یا چند socket client واقعی، private-state isolation و reconnect تست می‌شوند |
 
 ## ۳. معماری فعلی
 
@@ -44,14 +45,15 @@
 
 ### Server
 
-`server/src/index.js` مسئول HTTP، health check، graceful shutdown و event handlerهای Socket.io است. `server/src/config.js` مقدار `PORT` را validate می‌کند. تست‌های lifecycle در `server/test/health.test.js`, `server/test/shutdown.test.js` و `server/test/rooms.test.js` قرار دارند.
+`server/src/index.js` مسئول HTTP، health check، graceful shutdown و event handlerهای Socket.io است. `server/src/config.js` مقدارهای `PORT`, `ROOM_TTL_MS`, `STORAGE_PATH` و readiness را validate می‌کند. `server/src/storage.js` mirror اتمیک و versioned JSON را مدیریت می‌کند و `rooms.js` آن را در lifecycle روم مصرف می‌کند. تست‌های lifecycle، integration و storage در `server/test/rooms.test.js`, `server/test/integration.test.js` و `server/test/storage.test.js` قرار دارند.
 
-- `rooms.js`: نگهداری روم‌ها در `Map` و مدیریت create/join/reconnect/disconnect؛ lobby خالی فوراً cleanup می‌شود و روم in-game پس از قطع همه تا `ROOM_TTL_MS` برای reconnect باقی می‌ماند.
+- `rooms.js`: نگهداری روم‌ها در `Map` و مدیریت create/join/reconnect/disconnect؛ lobby خالی فوراً cleanup می‌شود و روم in-game پس از قطع همه تا `ROOM_TTL_MS` برای reconnect باقی می‌ماند. `storage.js` mirror اتمیک JSON می‌نویسد و در startup روم‌ها را با بازیکنان disconnected restore می‌کند.
 - `game/core.js`: مدل state، ساخت هندسه‌ی تخته، منابع، امتیاز و state عمومی.
 - `game/engine.js`: منطق server-authoritative برای setup، تاس، راهزن، ساخت‌وساز، معامله، کارت توسعه و پایان نوبت.
-- `shared/game-constants.mjs`: source of truth برای `RESOURCE_TYPES` و `BUILD_COST` که توسط client و server مصرف می‌شود.
+- `shared/game-constants.mjs`: source of truth برای constants بازی، ظرفیت و asset mapping.
+- `shared/contracts.mjs`: قرارداد event/state و مرز public/private.
 
-هر اکشن از Socket.io به engine می‌رسد و در صورت موفقیت state به روم broadcast می‌شود.
+هر اکشن از Socket.io به engine می‌رسد و در صورت موفقیت state به روم broadcast می‌شود. integration testها با socket client واقعی private-state isolation، broadcast، invalid ack و reconnect را بررسی می‌کنند.
 
 ## ۴. نحوه‌ی اجرای محلی
 
@@ -106,7 +108,7 @@ node --check src/game/core.js
 node --check src/game/engine.js
 ```
 
-در وضعیت فعلی `npm test`, `npm run lint` و `npm run format:check` در هر دو package تعریف شده‌اند. تست‌های client، CORS، validation، core، engine، room lifecycle و health اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها را قبل از رسیدن به engine بررسی می‌کند. قرارداد مشترک `RESOURCE_TYPES` و `BUILD_COST` در `shared/game-constants.mjs` تست می‌شود. پوشش کامل قوانین end-to-end همچنان با `ISS-006` دنبال می‌شود.
+در وضعیت فعلی `npm test`, `npm run lint` و `npm run format:check` در هر دو package تعریف شده‌اند. تست‌های client، CORS، validation، core، engine، room lifecycle، integration، storage و health اجرا می‌شوند؛ full suite سرور ۲۴۹ تست دارد. قراردادهای shared در مجموع ۶۲ تست دارند و client هفت تست دارد. پوشش کامل product end-to-end و database چندپردازشی هنوز باز است.
 
 ## ۶. ریسک‌های مهم
 
@@ -120,24 +122,24 @@ node --check src/game/engine.js
 ### صحت state
 
 - undo checkpoint همه‌ی قراردادهای state را به‌صورت صریح پوشش نمی‌دهد.
-- state روم فقط در حافظه است.
+- state اصلی روم در حافظه است و mirror فایل JSON versioned/atomic دارد؛ database یا shared multi-process store هنوز وجود ندارد.
 - guardهای اصلی IDهای board و player اضافه شده‌اند؛ validation کامل همه‌ی invariants بازی همچنان نیازمند تست‌های بیشتر است.
 
 ### نگه‌داری
 
-- constants بین client و server تکرار شده‌اند.
+- constants اصلی shared شده‌اند؛ translation catalog و همه‌ی state/event contractها هنوز کامل به shared منتقل نشده‌اند.
 - متن‌ها و labelها در دو زبان/منبع جدا قرار دارند.
-- ESLint، ۱۴۸ تست server، ۷ تست client و CI فعال هستند؛ formatter و پوشش کامل end-to-end هنوز باقی است.
+- ESLint، Prettier، ۲۴۹ تست server، ۶۲ تست shared، ۷ تست client و CI فعال هستند؛ آسیب‌پذیری‌های npm و پوشش کامل product end-to-end هنوز باید پیگیری شوند.
 - lockfileهای client/server tracked هستند؛ audit و به‌روزرسانی دوره‌ای dependencyها همچنان لازم است.
 
 ## ۷. ترتیب پیشنهادی برای ادامه‌ی کار
 
 ### فاز صفر — hygiene و بازتولیدپذیری
 
-1. نگه‌داشتن `.gitignore` و حذف فایل‌های generated/system از index.
-2. تثبیت lockfileهای client/server و حذف lockfile ریشه، مگر اینکه workspace رسمی انتخاب شود.
+1. [x] نگه‌داشتن `.gitignore` و حذف فایل‌های generated/system از index.
+2. [x] تثبیت lockfileهای client/server و حذف lockfile ریشه.
 3. تعریف نسخه‌ی Node پشتیبانی‌شده.
-4. اصلاح README و environment example.
+4. [x] اصلاح README و environment example.
 
 ### فاز یک — امنیت و ورودی‌ها
 
@@ -149,20 +151,21 @@ node --check src/game/engine.js
 ### فاز دو — تست و تثبیت قوانین
 
 1. [x] تست unit برای `core.js` و `engine.js`.
-2. [x] تست lifecycle روم و health check.
-3. پوشش setup، منابع، تاس ۷، discard، robber، build، trade، dev cards، longest road و winner به‌صورت end-to-end.
-4. تصمیم و تست رسمی undo.
+2. [x] تست lifecycle روم، health و integration چندبازیکنه Socket.io.
+3. پوشش product end-to-end برای setup، منابع، تاس ۷، discard، robber، build، trade، dev cards، longest road و winner.
+4. [x] تصمیم و تست رسمی undo برای یک checkpoint.
+5. طراحی undo چندمرحله‌ای در صورت نیاز محصول.
 
 ### فاز سه — tooling و CI
 
-1. افزودن formatter و `format:check`.
-2. توسعه‌ی تست‌های engine و تبدیل CI به quality gate کامل.
-3. گزارش failure قابل فهم در pull request.
+1. [x] formatter و `format:check`.
+2. [x] CI با shared contract gate، concurrency و syntax check کامل.
+3. فعال‌سازی branch protection و required checks در تنظیمات GitHub.
 
 ### فاز چهار — قابلیت محصول
 
-1. reconnect با lifecycle و TTL مشخص.
-2. persistence بازی‌ها.
+1. reconnect با session واقعی.
+2. persistence database/shared برای scale چندپردازشی.
 3. حساب کاربری/session.
 4. بازی‌های باز، spectator و آمار.
 5. responsive/accessibility.

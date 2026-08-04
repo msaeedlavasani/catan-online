@@ -4,12 +4,20 @@ import cors from "cors";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { Server } from "socket.io";
-import { createRoom, joinRoom, getRoom, markDisconnected, markReconnected } from "./rooms.js";
+import {
+  createRoom,
+  joinRoom,
+  getRoom,
+  markDisconnected,
+  markReconnected,
+  loadRoomsFromDisk,
+} from "./rooms.js";
 import { publicGameState } from "./game/core.js";
 import * as engine from "./game/engine.js";
 import { createCorsOptions, getAllowedOrigins } from "./cors.js";
 import { validatePayload } from "./validation.js";
 import { getPort, getReadinessMemoryThreshold } from "./config.js";
+import { initStorage, saveRoom, isStorageReady } from "./storage.js";
 
 const PORT = getPort();
 const allowedOrigins = getAllowedOrigins();
@@ -117,7 +125,12 @@ function handleAction(event, socket, fn) {
     if (!game) return callback?.({ ok: false, error: "Room not found." });
     try {
       const result = fn(game, playerId, validation.payload);
-      if (result.ok) broadcast(roomId);
+      if (result.ok) {
+        broadcast(roomId);
+        // Persist after every successful game action so the latest state
+        // survives a server restart.
+        if (isStorageReady()) saveRoom(game).catch(() => {});
+      }
       callback?.(result);
     } catch (error) {
       console.error(`Socket action failed: ${event}`, error);
@@ -322,9 +335,21 @@ const argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const isMain = argv1 === fileURLToPath(import.meta.url);
 
 if (isMain) {
-  server.listen(PORT, () => {
-    console.log(`Catan server listening on http://localhost:${PORT}`);
-  });
+  // Initialise storage before accepting connections.  If storage is
+  // unavailable and STORAGE_REQUIRED is not set, the server gracefully
+  // degrades to memory-only mode.
+  initStorage()
+    .then(() => loadRoomsFromDisk())
+    .then((count) => {
+      if (count > 0) console.log(`[startup] Loaded ${count} room(s) from disk`);
+      server.listen(PORT, () => {
+        console.log(`Catan server listening on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("[startup] Storage init failed:", err.message);
+      process.exit(1);
+    });
 }
 
 export { app, server, io };

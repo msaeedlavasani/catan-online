@@ -7,10 +7,11 @@
 ## وضعیت فعلی
 
 - ظرفیت فعلی روم: **۲ تا ۴ بازیکن**؛ فقط چهار رنگ فعلی asset کامل دارند.
-- نگهداری روم‌ها: حافظه‌ی سرور؛ با restart شدن سرور بازی‌ها از بین می‌روند.
+- نگهداری روم‌ها: state اصلی در حافظه و mirror پایدار در فایل JSON نسخه‌دار؛ بازی‌ها بعد از restart قابل بازیابی هستند، اما هنوز database/multi-process store نداریم.
 - احراز هویت و حساب کاربری: وجود ندارد.
-- lint، format check و تست‌های خودکار فعال‌اند؛ سرور اکنون ۲۰۴ تست دارد و پوشش کامل مسیرهای end-to-end بازی هنوز باقی است.
-- پایگاه‌داده: در نسخه‌ی فعلی استفاده نمی‌شود.
+- lint، format check و تست‌های خودکار فعال‌اند؛ server اکنون ۲۴۹ تست، shared contractها ۶۲ تست و client هفت تست دارند.
+- integration test چندبازیکنه‌ی Socket.io اضافه شده است.
+- پایگاه‌داده: در نسخه‌ی فعلی استفاده نمی‌شود؛ persistence فعلی فایل JSON است.
 
 ## ساختار پروژه
 
@@ -27,10 +28,12 @@ catan-online/
 │       ├── game/core.js    # مدل state، تخته و helperهای قوانین
 │       ├── game/engine.js  # اکشن‌های server-authoritative بازی
 │       ├── rooms.js        # مدیریت in-memory روم‌ها و TTL
+│       ├── storage.js      # persistence اتمیک JSON روم‌ها
 │       ├── config.js       # validation تنظیمات و readiness
 │       └── index.js         # HTTP API و health/Socket.io
 ├── shared/                 # قراردادهای مشترک client/server
-│   └── game-constants.mjs  # RESOURCE_TYPES و BUILD_COST
+│   ├── game-constants.mjs  # constants بازی و ظرفیت
+│   └── contracts.mjs       # event/state contracts
 ├── HANDOFF.md              # راهنمای تحویل و برنامه‌ی ادامه‌ی کار
 ├── ISSUES.md               # backlog مشکلات با اولویت و معیار پذیرش
 └── ROADMAP.md              # نقشه‌ی راه محصول
@@ -82,6 +85,8 @@ NODE_ENV=production
 CLIENT_ORIGIN=https://game.example.com
 PORT=4000
 ROOM_TTL_MS=300000
+STORAGE_PATH=data/rooms
+STORAGE_REQUIRED=false
 READINESS_MEMORY_THRESHOLD=0.9
 ```
 
@@ -106,7 +111,7 @@ npm run dev       # توسعه با nodemon
 npm start         # اجرای مستقیم
 ```
 
-scriptهای `lint` و `test` در هر دو package فعال هستند. ورودی‌های Socket.io با validation مرکزی در `server/src/validation.js` بررسی می‌شوند؛ اکشن‌های بدون payload مثل `buyDevCard` نیز در این قرارداد ثبت شده‌اند. تست‌های منفی و contract آن در `server/test/validation.test.js` قرار دارند. پوشش کامل قوانین engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
+scriptهای `lint`، `format:check` و `test` در هر دو package فعال هستند. ورودی‌های Socket.io با validation مرکزی در `server/src/validation.js` بررسی می‌شوند و قرارداد event/state در `shared/contracts.mjs` با contract test کنترل می‌شود. تست‌های integration چندبازیکنه در `server/test/integration.test.js` و persistence در `server/test/storage.test.js` قرار دارند. قبل از انتشار، `npm audit` نیز باید بررسی شود.
 
 ## معماری کوتاه
 
@@ -114,7 +119,7 @@ scriptهای `lint` و `test` در هر دو package فعال هستند. ورو
 - Socket.io رویدادهای ساخت/پیوستن به روم و اکشن‌های بازی را مدیریت می‌کند.
 - `server/src/game/engine.js` مرجع اعتبارسنجی اکشن‌هاست؛ به منطق بازی از سمت کلاینت اعتماد نمی‌شود.
 - state عمومی بدون دست کارت و منابع سایر بازیکنان broadcast می‌شود و state خصوصی هر بازیکن جداگانه ارسال می‌گردد.
-- روم‌ها در `Map` نگهداری می‌شوند؛ این تصمیم برای توسعه‌ی اولیه مناسب است اما برای چند process یا persistence کافی نیست.
+- روم‌ها در `Map` به‌عنوان source of truth نگهداری می‌شوند و mirror فایل JSON دارند؛ این معماری برای چند process یا scale افقی کافی نیست و باید به shared database/store ارتقا پیدا کند.
 
 ## بررسی سریع صحت پروژه
 

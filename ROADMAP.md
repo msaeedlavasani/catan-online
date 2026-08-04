@@ -9,19 +9,19 @@
 - [x] مستندات پایه، `.gitignore` و env example
 - [x] lockfileهای معتبر و قابل استفاده در clone تازه
 - [x] تست‌های پایه و quality gate اولیه
-- [x] workflow CI برای lint/test/build/syntax
+- [x] workflow CI برای format/lint/test/build/syntax و shared contracts
 
 ## ⬜ اسپرینت ۱ — MVP پایدار (بازی کامل، بدون اکانت)
 - [x] validation مرکزی برای payloadهای Socket.io
 - [x] محدود کردن CORS به originهای مجاز
 - [x] امن کردن IDهای روم و بازیکن
 - [x] تست unit برای قوانین اصلی بازی
-- [ ] تست چندبازیکنه‌ی end-to-end
-- [ ] تعیین نهایی ظرفیت رسمی بازیکن‌ها و assetها
+- [x] تست چندبازیکنه‌ی Socket.io و private-state isolation
+- [x] تعیین نهایی ظرفیت رسمی بازیکن‌ها و assetها
 - [x] تثبیت authorization pending actionها و قرارداد اصلی undo
 
 ## ⬜ اسپرینت ۲ — پایداری و UX
-- [ ] reconnect با session/TTL کامل و persistence
+- [ ] reconnect با session کامل و persistence database/shared
 - [x] cleanup روم‌های خالی در lobby و TTL روم‌های in-game
 - [ ] ریسپانسیو موبایل
 - [ ] دسترس‌پذیری و keyboard navigation

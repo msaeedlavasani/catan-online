@@ -30,6 +30,28 @@ export function getRoomTTL(raw = process.env.ROOM_TTL_MS) {
   return num;
 }
 
+// ── Storage config ───────────────────────────────────────────────────
+// Directory where room/game state files are persisted.  Must be an
+// absolute path or relative to the server process CWD.
+// Configured via STORAGE_PATH env var; defaults to "data/rooms".
+const DEFAULT_STORAGE_PATH = "data/rooms";
+const MAX_STORAGE_PATH_LEN = 1024;
+export function getStoragePath(raw = process.env.STORAGE_PATH) {
+  if (raw === undefined || raw === null || String(raw).trim() === "") {
+    return DEFAULT_STORAGE_PATH;
+  }
+  const val = String(raw).trim();
+  if (val.length > MAX_STORAGE_PATH_LEN) {
+    console.warn(`STORAGE_PATH too long — using default "${DEFAULT_STORAGE_PATH}"`);
+    return DEFAULT_STORAGE_PATH;
+  }
+  if (val.includes("\0")) {
+    console.warn(`STORAGE_PATH contains null byte — using default "${DEFAULT_STORAGE_PATH}"`);
+    return DEFAULT_STORAGE_PATH;
+  }
+  return val;
+}
+
 // ── Health / Readiness config ────────────────────────────────────────
 
 // Maximum heap-usage ratio (0–1) the readiness probe tolerates before

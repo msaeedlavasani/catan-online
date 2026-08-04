@@ -21,19 +21,16 @@ export const RES_LABEL = {
   ore: "سنگ‌معدن",
   desert: "کویر",
 };
-export const PLAYER_COLORS = ["#b23a2e", "#2b6ca3", "#e0952b", "#3f7d4a"]; // only these 4 have matching piece art
 
-// Only 4 of our 6 player colors currently have matching hand-made piece art
-// (red/blue/orange/green). Purple and pink fall back to the plain vector shapes.
-export const COLOR_ASSET_NAME = {
-  "#b23a2e": "red",
-  "#2b6ca3": "blue",
-  "#e0952b": "orange",
-  "#3f7d4a": "green",
-};
-
-import { BUILD_COST, RESOURCE_TYPES } from "../../../shared/game-constants.mjs";
-export { BUILD_COST, RESOURCE_TYPES };
+import {
+  BUILD_COST,
+  RESOURCE_TYPES,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  PLAYER_COLORS,
+  COLOR_ASSET_NAME,
+} from "../../../shared/game-constants.mjs";
+export { BUILD_COST, RESOURCE_TYPES, MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS, COLOR_ASSET_NAME };
 export const DEV_LABEL = {
   knight: "شوالیه",
   victory: "امتیاز پیروزی",

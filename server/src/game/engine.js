@@ -5,7 +5,7 @@
 // a successful call.
 
 import {
-  RESOURCE_TYPES, RES_LABEL, PLAYER_COLORS, BUILD_COST,
+  RESOURCE_TYPES, RES_LABEL, PLAYER_COLORS, BUILD_COST, MIN_PLAYERS,
   shuffle, buildBoardGeometry, assignBoardContent, newId,
   totalResources, canAfford, payCost, addResources,
   distanceRuleOk, edgeIsFree, playerOwnsEdgeVertexOrRoad, vertexConnectsToPlayerRoad,
@@ -142,7 +142,7 @@ function playerPortRate(board, player, resource) {
 export function startGame(g, playerId) {
   if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (g.players[0]?.id !== playerId) return fail("Only the host can start the game.");
-  if (g.players.length < 2) return fail("Need at least 2 players.");
+  if (g.players.length < MIN_PLAYERS) return fail("Need at least 2 players.");
   const colors = shuffle(PLAYER_COLORS).slice(0, g.players.length);
   const order = shuffle(g.players.map((p) => p.id));
   g.players.forEach((p, i) => (p.color = colors[i]));
@@ -212,6 +212,7 @@ export function placeSetupRoad(g, playerId, edgeId) {
 
 export function rollDice(g, playerId) {
   if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (g.phase !== "playing") return fail("Game has not started.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.dice && g.pending) return fail("Already rolled.");
   if (g.dice) return fail("Already rolled this turn.");

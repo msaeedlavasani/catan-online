@@ -1,6 +1,5 @@
 import { RESOURCE_TYPES } from "./game/core.js";
-
-const CARD_TYPES = ["knight", "victory", "roadBuilding", "yearOfPlenty", "monopoly"];
+import { CARD_TYPES } from "../../shared/contracts.mjs";
 const ID_FIELDS = new Set(["vertexId", "edgeId", "tileId"]);
 
 function isPlainObject(value) {

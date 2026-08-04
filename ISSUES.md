@@ -72,38 +72,39 @@
 ### ISS-005 — اصلاح مدل نگهداری روم‌ها و persistence
 
 - **شدت:** P1 / قابلیت محصول
-- **وضعیت:** lifecycle و TTL روم in-memory در این batch تکمیل شد؛ persistence چندپردازشی هنوز باز است.
-- **محل:** `server/src/rooms.js`, `server/src/config.js`, `server/test/rooms.test.js`
-- **راه‌حل اعمال‌شده:** روم خالی lobby فوراً حذف می‌شود؛ اگر همه‌ی بازیکنان in-game قطع شوند، timer قابل‌تنظیم با `ROOM_TTL_MS` شروع می‌شود. reconnect قبل از TTL timer را cancel می‌کند و timer با `unref` مانع خروج process نمی‌شود.
-- **اثر باقی‌مانده:** restart، crash یا اجرای چند process هنوز state را از بین می‌برد.
+- **وضعیت:** persistence فایل JSON و lifecycle روم در این batch تکمیل شد؛ database/multi-process store هنوز باز است.
+- **محل:** `server/src/storage.js`, `server/src/rooms.js`, `server/src/config.js`, `server/test/storage.test.js`
+- **راه‌حل اعمال‌شده:** storage versioned و atomic با path قابل تنظیم اضافه شد؛ startup rooms را load و بازیکنان را disconnected می‌کند؛ mutationها mirror می‌شوند؛ failure با `STORAGE_REQUIRED` کنترل می‌شود.
+- **اثر باقی‌مانده:** فایل JSON برای چند process، lock توزیع‌شده و scale افقی کافی نیست.
 - **معیار پذیرش:**
-  - [ ] رفتار restart برای کاربر مستند و تست شده باشد.
-  - [x] روم خالی در lobby cleanup می‌شود.
-  - [x] reconnect قبل/بعد از TTL و تنظیم `ROOM_TTL_MS` تست شده است.
-  - [ ] persistence واقعی در storage/DB اضافه شود.
+  - [x] save/load/delete deterministic و تست‌پذیر باشد.
+  - [x] write اتمیک و schema version داشته باشد.
+  - [x] startup/load failure رفتار کنترل‌شده داشته باشد.
+  - [ ] persistence database/shared store برای production scale اضافه شود.
 
-### ISS-006 — گسترش تست‌های unit برای قوانین اصلی بازی
+### ISS-006 — گسترش تست‌های unit و integration قوانین اصلی بازی
 
 - **شدت:** P1 / کیفیت
-- **وضعیت:** بخش unit تست core و engine در این batch تکمیل شد؛ پوشش end-to-end بازی هنوز باقی است.
-- **محل:** `server/test/core.test.js`, `server/test/engine.test.js`
-- **تغییر:** ۶۵ تست deterministic برای geometry، منابع، هزینه‌ها، distance rule، longest road، scoring، public state و state factory اضافه شد و authorization pending actions نیز تست شد.
+- **وضعیت:** unit و integration چندبازیکنه در این batch تکمیل شد؛ product flow کامل هنوز باز است.
+- **محل:** `server/test/core.test.js`, `server/test/engine.test.js`, `server/test/integration.test.js`
+- **تغییر:** core/engine و ۲۱ سناریوی Socket.io واقعی برای create/join، broadcast، private state isolation، invalid ack، disconnect/reconnect و دو روم مستقل پوشش داده شد.
 - **معیار پذیرش:**
   - [x] script استاندارد `npm test` وجود داشته باشد.
   - [x] قوانین core و pending actionهای engine پوشش داده شوند.
-  - [x] تست‌ها در CI قابل اجرا باشند.
+  - [x] تست چندبازیکنه‌ی Socket.io در CI قابل اجرا باشد.
   - [ ] تست end-to-end کامل برای setup، roll/discard/robber، trade و winner اضافه شود.
 
 ### ISS-007 — هماهنگ کردن ظرفیت بازیکن‌ها با مستندات و assetها
 
 - **شدت:** P1 / محصول و UX
-- **وضعیت:** ظرفیت واقعی و lifecycle روم تست و مستند شد؛ asset و UI رسمی هنوز باید بررسی شوند.
-- **محل:** `server/src/rooms.js`, `server/test/rooms.test.js`, `client/src/game/constants.js`
-- **مشکل باقی‌مانده:** باید یک منبع حقیقت برای ظرفیت و assetهای قابل‌استفاده در UI تعریف شود.
-- **تغییر:** تست‌های join ظرفیت ۴ نفر، نفر پنجم، روم ناموجود و روم شروع‌شده اضافه شد.
+- **وضعیت:** رفع شد در این batch.
+- **محل:** `shared/game-constants.mjs`, `server/src/rooms.js`, `server/src/game/engine.js`, `client/src/App.jsx`, `server/test/rooms.test.js`
+- **راه‌حل اعمال‌شده:** `MIN_PLAYERS=2`, `MAX_PLAYERS=4`, رنگ‌ها و asset mapping در shared source of truth قرار گرفتند؛ server join/start و client UI از همان constants استفاده می‌کنند.
+- **تست:** contract test و join ظرفیت با `MAX_PLAYERS` هماهنگ است.
 - **معیار پذیرش:**
-  - [ ] ظرفیت در UI، README و server یکسان باشد.
+  - [x] ظرفیت در UI، README و server یکسان باشد.
   - [x] تست join برای ظرفیت مجاز و نفر اضافه وجود داشته باشد.
+  - [x] رنگ/asset خارج از ظرفیت استفاده نشود.
 
 ### ISS-008 — اعتبارسنجی شناسه‌ها و objectهای بازی در engine
 
@@ -147,15 +148,15 @@
 ### ISS-011 — حذف duplication بین client و server
 
 - **شدت:** P2 / نگه‌داری
-- **وضعیت:** بخش constants اصلی رفع شد؛ shared contractهای بیشتر هنوز باز هستند.
-- **محل:** `shared/game-constants.mjs`, `client/src/game/constants.js`, `server/src/game/core.js`, `shared/game-constants.test.mjs`
-- **راه‌حل اعمال‌شده:** `RESOURCE_TYPES` و `BUILD_COST` در shared module به‌صورت frozen تعریف شده‌اند و client/server آن‌ها را re-export می‌کنند؛ labelهای presentation همچنان در سمت UI باقی مانده‌اند.
-- **تست:** ۹ تست contract برای مقادیر canonical، immutability و resource keys.
+- **وضعیت:** constants و event/state contractهای اصلی shared شده‌اند؛ contractهای کامل versioned برای همه‌ی API هنوز باز هستند.
+- **محل:** `shared/game-constants.mjs`, `shared/contracts.mjs`, `client/src/game/constants.js`, `server/src/game/core.js`, `server/src/validation.js`
+- **راه‌حل اعمال‌شده:** constants ظرفیت/resource/build و event names، payload shapes، phaseها، pendingها و public/private boundaries در shared modules تعریف و frozen شدند.
+- **تست:** ۶۲ تست contract برای constants، event/state shapes، immutability و cross-reference.
 - **معیار پذیرش:**
   - [x] BUILD_COST و RESOURCE_TYPES یک source of truth دارند.
   - [x] client build و server test با import مشترک موفق‌اند.
-  - [x] labelهای UI به server منتقل نشده‌اند.
-  - [ ] سایر state/event contractها نیز shared و versioned شوند.
+  - [x] public/private state contract تست می‌شود.
+  - [ ] contractها versioned و به validation/runtime schema کامل متصل شوند.
 
 ### ISS-012 — یکسان‌سازی ترجمه‌ها و متن‌های قابل نمایش
 
@@ -182,14 +183,15 @@
 ### ISS-014 — تکمیل CI برای نصب، build، lint و test
 
 - **شدت:** P2 / اتوماسیون
-- **وضعیت:** workflow در `.github/workflows/ci.yml` اضافه شده و روی push به `main` و pull request اجرا می‌شود.
-- **مشکل باقی‌مانده:** اجباری‌کردن status check نیازمند فعال‌سازی branch protection در تنظیمات GitHub است.
-- **اثر:** بدون branch protection، workflow می‌تواند شکست بخورد اما merge دستی هنوز ممکن است.
-- **راه‌حل پیشنهادی:** پس از push workflow، jobهای `client` و `server` را به required status checks تبدیل کنید.
+- **وضعیت:** workflow hardening شد؛ branch protection هنوز نیازمند تنظیم GitHub با دسترسی مالک است.
+- **محل:** `.github/workflows/ci.yml`
+- **راه‌حل اعمال‌شده:** concurrency با cancel stale run، job مستقل shared contract، job names پایدار و syntax check کامل‌تر اضافه شد؛ permissions حداقلی `contents: read` باقی است.
+- **Required checks پیشنهادی:** `Shared contract tests`, `Client format, lint, test, build`, `Server format, lint, test, syntax`.
 - **معیار پذیرش:**
-  - [x] PR شامل `npm ci`, build، lint و test باشد.
+  - [x] PR شامل format، `npm ci`, build، lint و test باشد.
   - [x] secret و environment production وارد CI نشود.
-  - [ ] branch protection مانع merge در صورت شکست CI شود.
+  - [x] jobهای required نام پایدار داشته باشند.
+  - [ ] branch protection در GitHub فعال شود.
 
 ### ISS-015 — مدیریت پیکربندی و health check production
 
@@ -228,8 +230,9 @@
 ### ISS-018 — حساب کاربری و persistence بازی
 
 - **محل:** کل پروژه؛ در roadmap اسپرینت ۳ و ۴
-- **مشکل:** بازیکن نام موقت دارد و بازی به user واقعی متصل نیست.
-- **معیار پذیرش:** user/session، مالکیت بازی و migration داده‌ها مشخص و تست‌پذیر باشند.
+- **وضعیت:** persistence فایل JSON برای recovery اضافه شده؛ حساب کاربری و persistence database/shared هنوز باز است.
+- **مشکل:** بازیکن نام موقت دارد و بازی به user واقعی متصل نیست؛ فایل JSON برای scale افقی مناسب نیست.
+- **معیار پذیرش:** user/session، مالکیت بازی، migration داده‌ها و storage چندپردازشی مشخص و تست‌پذیر باشند.
 
 ### ISS-019 — واکنش‌گرایی موبایل و دسترس‌پذیری
 

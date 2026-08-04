@@ -6,13 +6,36 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
+  shared:
+    name: Shared contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Shared contract test (game constants)
+        run: node --test shared/game-constants.test.mjs
+
+      - name: Shared contract test (event/state)
+        run: node --test shared/contracts.test.mjs
+
   client:
     name: Client format, lint, test, build
     runs-on: ubuntu-latest
+    needs: [shared]
     defaults:
       run:
         working-directory: client
@@ -39,16 +62,13 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Shared contract test
-        working-directory: .
-        run: node --test shared/game-constants.test.mjs
-
       - name: Build
         run: npm run build
 
   server:
     name: Server format, lint, test, syntax
     runs-on: ubuntu-latest
+    needs: [shared]
     defaults:
       run:
         working-directory: server
@@ -80,5 +100,8 @@ jobs:
           node --check src/index.js
           node --check src/rooms.js
           node --check src/cors.js
+          node --check src/config.js
+          node --check src/validation.js
+          node --check src/storage.js
           node --check src/game/core.js
           node --check src/game/engine.js
