@@ -64,11 +64,23 @@ npm run dev
 
 سپس آدرس نمایش‌داده‌شده توسط Vite را باز کنید؛ معمولاً `http://localhost:5173` است.
 
-کلاینت به‌صورت پیش‌فرض به `http://localhost:4000` وصل می‌شود. برای تغییر آن، در `client/.env` بنویسید:
+در development کلاینت بدون تنظیم اضافه به `http://localhost:4000` وصل می‌شود. برای production، آدرس عمومی backend را **قبل از build** در `client/.env` تنظیم کنید:
 
 ```env
-VITE_SERVER_URL=http://localhost:4000
+VITE_SERVER_URL=https://api.example.com
 ```
+
+اگر frontend و backend روی یک origin هستند، می‌توانید `VITE_SERVER_URL` را خالی بگذارید تا کلاینت از origin فعلی مرورگر استفاده کند. بعد از هر تغییر این مقدار، باید دوباره `npm run build` اجرا شود.
+
+روی سرور نیز origin frontend را تنظیم کنید؛ نمونه‌ی کامل در [`server/.env.example`](./server/.env.example) است:
+
+```env
+NODE_ENV=production
+CLIENT_ORIGIN=https://game.example.com
+PORT=4000
+```
+
+چند origin با comma قابل تعریف است. اگر `NODE_ENV=production` باشد و `CLIENT_ORIGIN` تنظیم نشده باشد، سرور عمداً startup را متوقف می‌کند تا اتصال browser به‌صورت خاموش خراب نشود.
 
 ## دستورات توسعه
 

@@ -70,6 +70,7 @@
 
 - **شدت:** P1 / قابلیت محصول
 - **محل:** `server/src/rooms.js:6`, `server/src/game/core.js:328-353`
+- **وضعیت فعلی:** علت ازبین‌رفتن روم‌ها بعد از deploy/restart تأیید شد؛ این issue هنوز باز است.
 - **مشکل:** state فقط در `Map` حافظه نگهداری می‌شود.
 - **اثر:** restart، crash یا اجرای چند process باعث از دست رفتن بازی و ناسازگاری state می‌شود.
 - **راه‌حل پیشنهادی:** برای MVP کوتاه‌مدت lifecycle و TTL روم‌ها را مشخص کنید؛ برای persistence واقعی storage/DB و در صورت scale شدن یک shared store اضافه کنید. مستندات نباید ادعا کند SQLite فعال است.
@@ -218,7 +219,8 @@
 
 ### ISS-017 — reconnect واقعی و lifecycle بازیکن
 
-- **محل:** `server/src/rooms.js`, handlerهای `rejoinRoom` و `disconnect`
+- **محل:** `server/src/rooms.js`, handlerهای `rejoinRoom` و `disconnect`, `client/src/App.jsx`
+- **وضعیت فعلی:** کلاینت خطای اتصال، timeout اکشن و reconnect اولیه را بهتر گزارش می‌کند؛ reconnect پایدار بعد از restart هنوز به persistence وابسته است.
 - **مشکل:** reconnect وابسته به نگهداری `playerId` در کلاینت و state in-memory است و TTL/تعارض session ندارد.
 - **معیار پذیرش:** reconnect در قطع کوتاه، refresh صفحه و session هم‌زمان رفتار مشخص داشته باشد.
 

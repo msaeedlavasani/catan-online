@@ -11,6 +11,10 @@ const PORT = process.env.PORT || 4000;
 const allowedOrigins = getAllowedOrigins();
 const corsOptions = createCorsOptions(allowedOrigins);
 
+if (process.env.NODE_ENV === "production" && !process.env.CLIENT_ORIGIN) {
+  throw new Error("CLIENT_ORIGIN must be set in production so browser Socket.io connections are allowed.");
+}
+
 const app = express();
 app.use(cors(corsOptions));
 app.use(express.json());

@@ -38,7 +38,7 @@
 1. `gameState`: state عمومی بازی، بدون منابع و کارت‌های دست سایر بازیکن‌ها.
 2. `myPrivateState`: منابع و کارت‌های توسعه‌ی بازیکن جاری.
 
-آدرس سرور از `VITE_SERVER_URL` خوانده می‌شود و در نبود آن local server روی پورت ۴۰۰۰ فرض می‌شود.
+آدرس سرور در زمان build از `VITE_SERVER_URL` خوانده می‌شود. در development نبود آن به `http://localhost:4000` fallback می‌کند؛ در production اگر frontend و backend هم‌origin باشند از origin فعلی استفاده می‌شود، و در deploy جدا باید `VITE_SERVER_URL` قبل از build تنظیم شود. همچنین `CLIENT_ORIGIN` باید روی backend production تنظیم شود؛ در غیر این صورت server عمداً startup نمی‌شود. نمونه‌ی backend در `server/.env.example` است.
 
 ### Server
 

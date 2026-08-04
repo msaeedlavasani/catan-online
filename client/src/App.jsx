@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Copy, Check, Dice5, Home, Building2, Milestone, Users, Sparkles, ScrollText } from "lucide-react";
-import { socket } from "./socket.js";
+import { socket, SERVER_URL } from "./socket.js";
 import { styles } from "./styles.js";
 import { PARCHMENT, RES_COLOR, RES_LABEL, RESOURCE_TYPES, DEV_LABEL } from "./game/constants.js";
 import { emptyResources, getSuggestions } from "./game/helpers.js";
@@ -40,17 +40,37 @@ export default function App() {
   const [yopPicks, setYopPicks] = useState([]);
   const [discardPicks, setDiscardPicks] = useState(emptyResources());
   const [actionError, setActionError] = useState("");
+  const [connectionError, setConnectionError] = useState("");
   const [reconnecting, setReconnecting] = useState(false);
   const [myPrivate, setMyPrivate] = useState({ resources: emptyResources(), devCards: [] });
+
+  function emitWithTimeout(event, payload, onResult) {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      onResult({ ok: false, error: "اتصال به سرور پاسخ نداد. آدرس سرور و وضعیت deploy را بررسی کن." });
+    }, 10000);
+    socket.emit(event, payload, (result) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      onResult(result);
+    });
+  }
 
   // On first load, try to resume a previous session (page refresh, dropped wifi, etc.)
   useEffect(() => {
     const session = loadSession();
     if (!session) return;
     setReconnecting(true);
-    socket.emit("rejoinRoom", { roomId: session.roomId, playerId: session.playerId }, (res) => {
+    emitWithTimeout("rejoinRoom", { roomId: session.roomId, playerId: session.playerId }, (res) => {
       setReconnecting(false);
-      if (!res || res.ok === false) { clearSession(); return; }
+      if (!res || res.ok === false) {
+        clearSession();
+        setConnectionError(res?.error || "روم قبلی دیگر روی سرور وجود ندارد. یک روم جدید بساز.");
+        return;
+      }
       setMe({ playerId: session.playerId });
       setGame(res.room);
       setScreen(res.room.phase === "lobby" ? "lobby" : "game");
@@ -58,6 +78,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    function onConnect() {
+      setConnectionError("");
+    }
+    function onConnectError(error) {
+      setConnectionError(`اتصال به سرور برقرار نشد (${SERVER_URL}). ${error.message || ""}`.trim());
+    }
+    function onDisconnect(reason) {
+      if (reason !== "io client disconnect") {
+        setConnectionError("اتصال به سرور قطع شد؛ در حال تلاش برای اتصال دوباره…");
+      }
+    }
     function onGameState(room) {
       setGame(room);
       setScreen(room.phase === "lobby" ? "lobby" : "game");
@@ -65,9 +96,15 @@ export default function App() {
     function onPrivateState(data) {
       setMyPrivate(data);
     }
+    socket.on("connect", onConnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("disconnect", onDisconnect);
     socket.on("gameState", onGameState);
     socket.on("myPrivateState", onPrivateState);
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("disconnect", onDisconnect);
       socket.off("gameState", onGameState);
       socket.off("myPrivateState", onPrivateState);
     };
@@ -86,7 +123,7 @@ export default function App() {
   const isMyTurn = !!(game && myPlayer && game.players[game.currentPlayerIndex]?.id === myPlayer.id);
 
   function act(event, payload = {}) {
-    socket.emit(event, payload, (res) => {
+    emitWithTimeout(event, payload, (res) => {
       if (res && res.ok === false) setActionError(res.error || "Action failed.");
       else setActionError("");
     });
@@ -94,7 +131,12 @@ export default function App() {
 
   function handleCreate() {
     if (!nameInput.trim()) return;
-    socket.emit("createRoom", { playerName: nameInput.trim() }, (res) => {
+    setActionError("");
+    emitWithTimeout("createRoom", { playerName: nameInput.trim() }, (res) => {
+      if (!res || res.ok === false || !res.room || !res.playerId) {
+        setActionError(res?.error || "ساخت روم انجام نشد. اتصال سرور را بررسی کن.");
+        return;
+      }
       setMe({ playerId: res.playerId });
       setGame(res.room);
       setScreen("lobby");
@@ -104,8 +146,9 @@ export default function App() {
 
   function handleJoin() {
     if (!nameInput.trim() || !joinInput.trim()) return;
-    socket.emit("joinRoom", { roomId: joinInput.trim().toUpperCase(), playerName: nameInput.trim() }, (res) => {
-      if (res?.ok === false) { setActionError(res.error); return; }
+    setActionError("");
+    emitWithTimeout("joinRoom", { roomId: joinInput.trim().toUpperCase(), playerName: nameInput.trim() }, (res) => {
+      if (!res || res.ok === false) { setActionError(res?.error || "ورود به روم انجام نشد."); return; }
       setMe({ playerId: res.playerId });
       setGame(res.room);
       setScreen("lobby");
@@ -167,7 +210,11 @@ export default function App() {
           <button style={styles.secondaryBtn} onClick={handleJoin} disabled={!nameInput.trim() || !joinInput.trim()}>
             ورود به بازی
           </button>
-          {actionError && <p style={{ color: "crimson", fontSize: 12 }}>{actionError}</p>}
+          {(connectionError || actionError) && (
+            <p style={{ color: "crimson", fontSize: 12, direction: "rtl" }}>
+              {connectionError || actionError}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -209,7 +256,11 @@ export default function App() {
           ) : (
             <p style={styles.subtitle}>در انتظار شروع بازی توسط میزبان…</p>
           )}
-          {actionError && <p style={{ color: "crimson", fontSize: 12 }}>{actionError}</p>}
+          {(connectionError || actionError) && (
+            <p style={{ color: "crimson", fontSize: 12, direction: "rtl" }}>
+              {connectionError || actionError}
+            </p>
+          )}
         </div>
       </div>
     );
