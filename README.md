@@ -101,7 +101,7 @@ npm run dev       # توسعه با nodemon
 npm start         # اجرای مستقیم
 ```
 
-scriptهای `lint` و `test` در هر دو package فعال هستند. تست‌های فعلی پایه‌اند و پوشش کامل engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
+scriptهای `lint` و `test` در هر دو package فعال هستند. ورودی‌های Socket.io با validation مرکزی در `server/src/validation.js` بررسی می‌شوند و تست‌های منفی آن در `server/test/validation.test.js` قرار دارند. پوشش کامل قوانین engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
 
 ## معماری کوتاه
 
@@ -124,6 +124,9 @@ node --check src/index.js
 node --check src/rooms.js
 node --check src/game/core.js
 node --check src/game/engine.js
+node --check src/validation.js
+npm test
+npm run lint
 ```
 
 ## مستندات ادامه‌ی کار

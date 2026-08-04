@@ -103,14 +103,14 @@ node --check src/game/core.js
 node --check src/game/engine.js
 ```
 
-در وضعیت فعلی `npm test` و `npm run lint` در هر دو package تعریف شده‌اند. تست‌های پایه‌ی helper و CORS اجرا می‌شوند؛ پوشش کامل قوانین بازی همچنان با `ISS-006` دنبال می‌شود.
+در وضعیت فعلی `npm test` و `npm run lint` در هر دو package تعریف شده‌اند. تست‌های client، CORS و validation اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها را قبل از رسیدن به engine بررسی می‌کند و handlerها خطا را با ack استاندارد برمی‌گردانند. پوشش کامل قوانین بازی همچنان با `ISS-006` دنبال می‌شود.
 
 ## ۶. ریسک‌های مهم
 
 ### امنیت
 
 - CORS با allowlist قابل‌پیکربندی کنترل می‌شود؛ پیش‌فرض development فقط `http://localhost:5173` است.
-- ورودی‌های Socket.io schema validation مرکزی ندارند.
+- ورودی‌های Socket.io اکنون با validation مرکزی بررسی می‌شوند؛ پوشش کامل contractهای بازی هنوز باید توسعه پیدا کند.
 - شناسه‌های روم/بازیکن با `Math.random()` ساخته می‌شوند.
 - authorization برای برخی pending actionها و cancel trade کامل نیست.
 
@@ -118,7 +118,7 @@ node --check src/game/engine.js
 
 - undo checkpoint همه‌ی قراردادهای state را به‌صورت صریح پوشش نمی‌دهد.
 - state روم فقط در حافظه است.
-- بعضی IDهای board قبل از دسترسی به object validate نمی‌شوند.
+- guardهای اصلی IDهای board و player اضافه شده‌اند؛ validation کامل همه‌ی invariants بازی همچنان نیازمند تست‌های بیشتر است.
 
 ### نگه‌داری
 
@@ -138,9 +138,9 @@ node --check src/game/engine.js
 
 ### فاز یک — امنیت و ورودی‌ها
 
-1. افزودن validation برای تمام event payloadها.
+1. [x] افزودن validation مرکزی برای event payloadها.
 2. امن کردن IDها.
-3. اضافه کردن guard برای vertex/edge/tile/player.
+3. [x] اضافه کردن guard برای vertex/edge/tile/player.
 4. کامل کردن authorization برای pending actionها و trade.
 
 ### فاز دو — تست و تثبیت قوانین

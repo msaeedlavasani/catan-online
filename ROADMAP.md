@@ -12,7 +12,7 @@
 - [x] workflow CI برای lint/test/build/syntax
 
 ## ⬜ اسپرینت ۱ — MVP پایدار (بازی کامل، بدون اکانت)
-- [ ] validation مرکزی برای payloadهای Socket.io
+- [x] validation مرکزی برای payloadهای Socket.io
 - [x] محدود کردن CORS به originهای مجاز
 - [ ] امن کردن IDهای روم و بازیکن
 - [ ] تست unit برای قوانین اصلی بازی

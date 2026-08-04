@@ -29,14 +29,16 @@
 ### ISS-002 — جلوگیری از ورود داده‌ی نامعتبر به اکشن‌های Socket.io
 
 - **شدت:** P0 / صحت و پایداری
-- **محل:** تمام handlerهای اکشن در `server/src/index.js` و ورودی‌های `server/src/game/engine.js`
-- **مشکل:** payloadها مستقیماً destructure یا به engine فرستاده می‌شوند؛ schema validation مرکزی وجود ندارد.
-- **اثر:** payload ناقص/غلط می‌تواند باعث exception، state خراب یا قطع handler شود.
-- **راه‌حل پیشنهادی:** schemaهای ورودی برای room، player name، resource، vertex/edge و trade تعریف کنید؛ خطای validation را با ack استاندارد برگردانید.
+- **وضعیت:** بخش اصلی رفع شد در این تغییر؛ validation کامل invariantهای بازی هنوز باز است.
+- **محل:** `server/src/validation.js`, `server/src/index.js`, `server/src/game/engine.js`
+- **راه‌حل اعمال‌شده:** payloadهای create/join/rejoin، room state، board ids، منابع، trade، کارت توسعه و picks قبل از engine validate می‌شوند. handlerها خطای `{ ok: false, error }` برمی‌گردانند و اجرای engine را با try/catch ایزوله می‌کنند.
+- **guardهای engine:** player ناشناخته و vertex/edge/tile خارج از محدوده خطای کنترل‌شده می‌دهند؛ لغو trade فقط برای proposer مجاز است.
+- **تست:** `server/test/validation.test.js` payload ناقص، type غلط، ID خارج از محدوده، player ناشناخته و مالکیت trade را بررسی می‌کند.
 - **معیار پذیرش:**
-  - [ ] هیچ handler عمومی با payload نامعتبر exception ندهد.
-  - [ ] شناسه‌های tile/vertex/edge قبل از دسترسی به آرایه validate شوند.
-  - [ ] تست منفی برای payload ناقص و نوع داده‌ی غلط وجود داشته باشد.
+  - [x] handler عمومی با payload نامعتبر exception قابل‌مشاهده به client نمی‌دهد.
+  - [x] شناسه‌های tile/vertex/edge قبل از دسترسی به آرایه validate شوند.
+  - [x] تست منفی برای payload ناقص و نوع داده‌ی غلط وجود داشته باشد.
+  - [ ] همه‌ی invariantهای پیچیده‌ی قوانین بازی با تست پوشش داده شوند.
 
 ### ISS-003 — ایمن‌سازی شناسه‌ی روم و بازیکن
 

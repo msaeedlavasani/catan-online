@@ -11,9 +11,22 @@ import {
   distanceRuleOk, edgeIsFree, playerOwnsEdgeVertexOrRoad, vertexConnectsToPlayerRoad,
   longestRoadLength, totalScore,
 } from "./core.js";
+import { isKnownResource, validateBoardId } from "../validation.js";
 
 function fail(error) { return { ok: false, error }; }
 const OK = { ok: true };
+
+function getPlayer(g, playerId) {
+  return g.players.find((p) => p.id === playerId) || null;
+}
+
+function validPlayer(g, playerId) {
+  return getPlayer(g, playerId) !== null;
+}
+
+function validBoardId(g, type, id) {
+  return validateBoardId(g.board, type, id);
+}
 
 // --- Turn-undo checkpoint system ---
 // A checkpoint captures everything that CAN safely be reverted: resources,
@@ -62,6 +75,7 @@ function restoreCheckpoint(g, snap) {
 }
 
 export function undoTurnActions(g, playerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.pending) return fail("Resolve the pending action first.");
   if (!g.turnCheckpoint) return fail("Nothing to undo.");
@@ -113,6 +127,7 @@ function playerPortRate(board, player, resource) {
 }
 
 export function startGame(g, playerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (g.players[0]?.id !== playerId) return fail("Only the host can start the game.");
   if (g.players.length < 2) return fail("Need at least 2 players.");
   const colors = shuffle(PLAYER_COLORS).slice(0, g.players.length);
@@ -132,6 +147,8 @@ export function startGame(g, playerId) {
 }
 
 export function placeSetupSettlement(g, playerId, vertexId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "vertex", vertexId)) return fail("Invalid vertex.");
   if (g.phase !== "setup" || g.setupSubPhase !== "settlement") return fail("Not the settlement step.");
   if (currentSetupPlayerId(g) !== playerId) return fail("Not your turn.");
   const player = g.players.find((p) => p.id === playerId);
@@ -144,6 +161,8 @@ export function placeSetupSettlement(g, playerId, vertexId) {
 }
 
 export function placeSetupRoad(g, playerId, edgeId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "edge", edgeId)) return fail("Invalid edge.");
   if (g.phase !== "setup" || g.setupSubPhase !== "road") return fail("Not the road step.");
   if (currentSetupPlayerId(g) !== playerId) return fail("Not your turn.");
   const player = g.players.find((p) => p.id === playerId);
@@ -179,6 +198,7 @@ export function placeSetupRoad(g, playerId, edgeId) {
 }
 
 export function rollDice(g, playerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.dice && g.pending) return fail("Already rolled.");
   if (g.dice) return fail("Already rolled this turn.");
@@ -215,6 +235,7 @@ export function rollDice(g, playerId) {
 }
 
 export function submitDiscard(g, playerId, picks) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!g.pending || g.pending.type !== "discard") return fail("No discard pending.");
   if (!g.pending.remaining.includes(playerId)) return fail("You have nothing to discard.");
   const player = g.players.find((p) => p.id === playerId);
@@ -231,6 +252,8 @@ export function submitDiscard(g, playerId, picks) {
 }
 
 export function moveRobber(g, playerId, tileId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "tile", tileId)) return fail("Invalid tile.");
   if (!g.pending || g.pending.type !== "robberMove") return fail("No robber move pending.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (tileId === g.robberTileId) return fail("Robber must move to a different tile.");
@@ -252,6 +275,7 @@ export function moveRobber(g, playerId, tileId) {
 }
 
 export function stealFrom(g, playerId, victimId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!g.pending || g.pending.type !== "robberSteal") return fail("No steal pending.");
   if (!g.pending.victims.includes(victimId)) return fail("Invalid victim.");
   const thief = g.players.find((p) => p.id === playerId);
@@ -270,7 +294,9 @@ export function stealFrom(g, playerId, victimId) {
 }
 
 export function buildRoad(g, playerId, edgeId) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "edge", edgeId)) return fail("Invalid edge.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (!edgeIsFree(edgeId, g.players)) return fail("Edge already has a road.");
   if (!playerOwnsEdgeVertexOrRoad(g.board, edgeId, player)) return fail("Road must connect to your network.");
@@ -293,7 +319,9 @@ export function buildRoad(g, playerId, edgeId) {
 }
 
 export function buildSettlement(g, playerId, vertexId) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "vertex", vertexId)) return fail("Invalid vertex.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (!distanceRuleOk(g.board, vertexId, g.players)) return fail("Too close to another settlement.");
   if (!vertexConnectsToPlayerRoad(g.board, vertexId, player)) return fail("Must connect to one of your roads.");
@@ -307,7 +335,9 @@ export function buildSettlement(g, playerId, vertexId) {
 }
 
 export function buildCity(g, playerId, vertexId) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!validBoardId(g, "vertex", vertexId)) return fail("Invalid vertex.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (!player.settlements.includes(vertexId)) return fail("You don't have a settlement there.");
   if (!canAfford(player.resources, BUILD_COST.city)) return fail("Not enough resources.");
@@ -321,7 +351,8 @@ export function buildCity(g, playerId, vertexId) {
 }
 
 export function buyDevCard(g, playerId) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.devDeck.length === 0) return fail("No development cards left.");
   if (!canAfford(player.resources, BUILD_COST.devCard)) return fail("Not enough resources.");
@@ -335,7 +366,8 @@ export function buyDevCard(g, playerId) {
 }
 
 export function playDevCard(g, playerId, cardId, type) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.hasPlayedDevCardThisTurn) return fail("Already played a development card this turn.");
   const card = player.devCards.find((c) => c.id === cardId);
@@ -381,8 +413,9 @@ export function playDevCard(g, playerId, cardId, type) {
 }
 
 export function resolveYearOfPlenty(g, playerId, picks) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (!g.pending || g.pending.type !== "yearOfPlenty") return fail("Nothing to resolve.");
-  const player = g.players.find((p) => p.id === playerId);
+  const player = getPlayer(g, playerId);
   const need = {};
   picks.forEach((r) => (need[r] = (need[r] || 0) + 1));
   if (!canAfford(g.bank, need)) return fail("Bank doesn't have those resources.");
@@ -395,8 +428,10 @@ export function resolveYearOfPlenty(g, playerId, picks) {
 }
 
 export function resolveMonopoly(g, playerId, resource) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!isKnownResource(resource)) return fail("Invalid resource.");
   if (!g.pending || g.pending.type !== "monopoly") return fail("Nothing to resolve.");
-  const player = g.players.find((p) => p.id === playerId);
+  const player = getPlayer(g, playerId);
   let total = 0;
   g.players.forEach((p) => {
     if (p.id === player.id) return;
@@ -411,7 +446,9 @@ export function resolveMonopoly(g, playerId, resource) {
 }
 
 export function bankTrade(g, playerId, give, want) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!isKnownResource(give) || !isKnownResource(want) || give === want) return fail("Invalid trade resources.");
+  const player = getPlayer(g, playerId);
   const rate = playerPortRate(g.board, player, give);
   if (player.resources[give] < rate) return fail("Not enough resources.");
   if (g.bank[want] < 1) return fail("Bank is out of that resource.");
@@ -424,7 +461,9 @@ export function bankTrade(g, playerId, give, want) {
 }
 
 export function proposeTrade(g, playerId, give, want) {
-  const player = g.players.find((p) => p.id === playerId);
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  if (!isKnownResource(give) || !isKnownResource(want) || give === want) return fail("Invalid trade resources.");
+  const player = getPlayer(g, playerId);
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (player.resources[give] < 1) return fail("You don't have that resource.");
   // Only replace THIS player's own open offer, so we don't wipe out an open
@@ -436,6 +475,7 @@ export function proposeTrade(g, playerId, give, want) {
 }
 
 export function acceptTrade(g, playerId, offerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   const offer = g.tradeOffers.find((o) => o.id === offerId && o.status === "open");
   if (!offer) return fail("Offer no longer available.");
   const proposer = g.players.find((p) => p.id === offer.from);
@@ -453,11 +493,16 @@ export function acceptTrade(g, playerId, offerId) {
 }
 
 export function cancelTrade(g, playerId, offerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
+  const offer = g.tradeOffers.find((o) => o.id === offerId && o.status === "open");
+  if (!offer) return fail("Offer no longer available.");
+  if (offer.from !== playerId) return fail("Only the proposer can cancel this offer.");
   g.tradeOffers = g.tradeOffers.filter((o) => o.id !== offerId);
   return OK;
 }
 
 export function endTurn(g, playerId) {
+  if (!validPlayer(g, playerId)) return fail("Unknown player.");
   if (g.players[g.currentPlayerIndex]?.id !== playerId) return fail("Not your turn.");
   if (g.pending) return fail("Resolve the pending action first.");
   g.tradeOffers = [];

@@ -6,6 +6,7 @@ import { createRoom, joinRoom, getRoom, markDisconnected, markReconnected } from
 import { publicGameState } from "./game/core.js";
 import * as engine from "./game/engine.js";
 import { createCorsOptions, getAllowedOrigins } from "./cors.js";
+import { validatePayload } from "./validation.js";
 
 const PORT = process.env.PORT || 4000;
 const allowedOrigins = getAllowedOrigins();
@@ -46,21 +47,30 @@ function sendPrivateState(socket, room, playerId) {
 
 // Wraps an engine action: runs it, and if it succeeds, broadcasts the new
 // state to everyone in the room. Always acks the caller with ok/error.
-function handleAction(socket, fn) {
+function handleAction(event, socket, fn) {
   return (payload, callback) => {
+    const validation = validatePayload(event, payload);
+    if (!validation.ok) return callback?.(validation);
     const { roomId, playerId } = socket.data;
     if (!roomId || !playerId) return callback?.({ ok: false, error: "Not in a room." });
     const game = getRoom(roomId);
     if (!game) return callback?.({ ok: false, error: "Room not found." });
-    const result = fn(game, playerId, payload);
-    if (result.ok) broadcast(roomId);
-    callback?.(result);
+    try {
+      const result = fn(game, playerId, validation.payload);
+      if (result.ok) broadcast(roomId);
+      callback?.(result);
+    } catch (error) {
+      console.error(`Socket action failed: ${event}`, error);
+      callback?.({ ok: false, error: "Invalid game action." });
+    }
   };
 }
 
 io.on("connection", (socket) => {
-  socket.on("createRoom", ({ playerName }, callback) => {
-    const { room, player } = createRoom(playerName);
+  socket.on("createRoom", (payload, callback) => {
+    const validation = validatePayload("createRoom", payload);
+    if (!validation.ok) return callback?.(validation);
+    const { room, player } = createRoom(validation.payload.playerName);
     socket.join(room.gameId);
     socket.data.playerId = player.id;
     socket.data.roomId = room.gameId;
@@ -68,7 +78,10 @@ io.on("connection", (socket) => {
     sendPrivateState(socket, room, player.id);
   });
 
-  socket.on("joinRoom", ({ roomId, playerName }, callback) => {
+  socket.on("joinRoom", (payload, callback) => {
+    const validation = validatePayload("joinRoom", payload);
+    if (!validation.ok) return callback?.(validation);
+    const { roomId, playerName } = validation.payload;
     const result = joinRoom(roomId, playerName);
     if (!result) return callback?.({ ok: false, error: "Room not found, full, or already started." });
     const { room, player } = result;
@@ -80,7 +93,10 @@ io.on("connection", (socket) => {
     broadcast(room.gameId);
   });
 
-  socket.on("rejoinRoom", ({ roomId, playerId }, callback) => {
+  socket.on("rejoinRoom", (payload, callback) => {
+    const validation = validatePayload("rejoinRoom", payload);
+    if (!validation.ok) return callback?.(validation);
+    const { roomId, playerId } = validation.payload;
     const room = markReconnected(roomId, playerId);
     if (!room) return callback?.({ ok: false, error: "Room no longer exists." });
     socket.join(roomId);
@@ -91,32 +107,34 @@ io.on("connection", (socket) => {
     broadcast(roomId);
   });
 
-  socket.on("requestRoomState", ({ roomId }, callback) => {
-    const room = getRoom(roomId);
+  socket.on("requestRoomState", (payload, callback) => {
+    const validation = validatePayload("requestRoomState", payload);
+    if (!validation.ok) return callback?.(validation);
+    const room = getRoom(validation.payload.roomId);
     callback?.({ room: room ? publicGameState(room) : null });
   });
 
   // --- Game actions (all validated + executed server-side) ---
-  socket.on("startGame", handleAction(socket, (g, pid) => engine.startGame(g, pid)));
-  socket.on("placeSetupSettlement", handleAction(socket, (g, pid, { vertexId }) => engine.placeSetupSettlement(g, pid, vertexId)));
-  socket.on("placeSetupRoad", handleAction(socket, (g, pid, { edgeId }) => engine.placeSetupRoad(g, pid, edgeId)));
-  socket.on("rollDice", handleAction(socket, (g, pid) => engine.rollDice(g, pid)));
-  socket.on("submitDiscard", handleAction(socket, (g, pid, { picks }) => engine.submitDiscard(g, pid, picks)));
-  socket.on("moveRobber", handleAction(socket, (g, pid, { tileId }) => engine.moveRobber(g, pid, tileId)));
-  socket.on("stealFrom", handleAction(socket, (g, pid, { victimId }) => engine.stealFrom(g, pid, victimId)));
-  socket.on("buildRoad", handleAction(socket, (g, pid, { edgeId }) => engine.buildRoad(g, pid, edgeId)));
-  socket.on("buildSettlement", handleAction(socket, (g, pid, { vertexId }) => engine.buildSettlement(g, pid, vertexId)));
-  socket.on("buildCity", handleAction(socket, (g, pid, { vertexId }) => engine.buildCity(g, pid, vertexId)));
-  socket.on("buyDevCard", handleAction(socket, (g, pid) => engine.buyDevCard(g, pid)));
-  socket.on("playDevCard", handleAction(socket, (g, pid, { cardId, type }) => engine.playDevCard(g, pid, cardId, type)));
-  socket.on("resolveYearOfPlenty", handleAction(socket, (g, pid, { picks }) => engine.resolveYearOfPlenty(g, pid, picks)));
-  socket.on("resolveMonopoly", handleAction(socket, (g, pid, { resource }) => engine.resolveMonopoly(g, pid, resource)));
-  socket.on("bankTrade", handleAction(socket, (g, pid, { give, want }) => engine.bankTrade(g, pid, give, want)));
-  socket.on("proposeTrade", handleAction(socket, (g, pid, { give, want }) => engine.proposeTrade(g, pid, give, want)));
-  socket.on("acceptTrade", handleAction(socket, (g, pid, { offerId }) => engine.acceptTrade(g, pid, offerId)));
-  socket.on("cancelTrade", handleAction(socket, (g, pid, { offerId }) => engine.cancelTrade(g, pid, offerId)));
-  socket.on("endTurn", handleAction(socket, (g, pid) => engine.endTurn(g, pid)));
-  socket.on("undoTurnActions", handleAction(socket, (g, pid) => engine.undoTurnActions(g, pid)));
+  socket.on("startGame", handleAction("startGame", socket, (g, pid) => engine.startGame(g, pid)));
+  socket.on("placeSetupSettlement", handleAction("placeSetupSettlement", socket, (g, pid, { vertexId }) => engine.placeSetupSettlement(g, pid, vertexId)));
+  socket.on("placeSetupRoad", handleAction("placeSetupRoad", socket, (g, pid, { edgeId }) => engine.placeSetupRoad(g, pid, edgeId)));
+  socket.on("rollDice", handleAction("rollDice", socket, (g, pid) => engine.rollDice(g, pid)));
+  socket.on("submitDiscard", handleAction("submitDiscard", socket, (g, pid, { picks }) => engine.submitDiscard(g, pid, picks)));
+  socket.on("moveRobber", handleAction("moveRobber", socket, (g, pid, { tileId }) => engine.moveRobber(g, pid, tileId)));
+  socket.on("stealFrom", handleAction("stealFrom", socket, (g, pid, { victimId }) => engine.stealFrom(g, pid, victimId)));
+  socket.on("buildRoad", handleAction("buildRoad", socket, (g, pid, { edgeId }) => engine.buildRoad(g, pid, edgeId)));
+  socket.on("buildSettlement", handleAction("buildSettlement", socket, (g, pid, { vertexId }) => engine.buildSettlement(g, pid, vertexId)));
+  socket.on("buildCity", handleAction("buildCity", socket, (g, pid, { vertexId }) => engine.buildCity(g, pid, vertexId)));
+  socket.on("buyDevCard", handleAction("buyDevCard", socket, (g, pid) => engine.buyDevCard(g, pid)));
+  socket.on("playDevCard", handleAction("playDevCard", socket, (g, pid, { cardId, type }) => engine.playDevCard(g, pid, cardId, type)));
+  socket.on("resolveYearOfPlenty", handleAction("resolveYearOfPlenty", socket, (g, pid, { picks }) => engine.resolveYearOfPlenty(g, pid, picks)));
+  socket.on("resolveMonopoly", handleAction("resolveMonopoly", socket, (g, pid, { resource }) => engine.resolveMonopoly(g, pid, resource)));
+  socket.on("bankTrade", handleAction("bankTrade", socket, (g, pid, { give, want }) => engine.bankTrade(g, pid, give, want)));
+  socket.on("proposeTrade", handleAction("proposeTrade", socket, (g, pid, { give, want }) => engine.proposeTrade(g, pid, give, want)));
+  socket.on("acceptTrade", handleAction("acceptTrade", socket, (g, pid, { offerId }) => engine.acceptTrade(g, pid, offerId)));
+  socket.on("cancelTrade", handleAction("cancelTrade", socket, (g, pid, { offerId }) => engine.cancelTrade(g, pid, offerId)));
+  socket.on("endTurn", handleAction("endTurn", socket, (g, pid) => engine.endTurn(g, pid)));
+  socket.on("undoTurnActions", handleAction("undoTurnActions", socket, (g, pid) => engine.undoTurnActions(g, pid)));
 
   socket.on("disconnect", () => {
     const { roomId, playerId } = socket.data;
