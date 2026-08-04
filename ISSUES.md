@@ -72,7 +72,7 @@
 ### ISS-005 — اصلاح مدل نگهداری روم‌ها و persistence
 
 - **شدت:** P1 / قابلیت محصول
-- **وضعیت:** persistence فایل JSON و lifecycle روم در این batch تکمیل شد؛ database/multi-process store هنوز باز است.
+- **وضعیت:** persistence فایل JSON و lifecycle روم در این batch تکمیل و روی production redeploy شد؛ database/multi-process store هنوز باز است.
 - **محل:** `server/src/storage.js`, `server/src/rooms.js`, `server/src/config.js`, `server/test/storage.test.js`
 - **راه‌حل اعمال‌شده:** storage versioned و atomic با path قابل تنظیم اضافه شد؛ startup rooms را load و بازیکنان را disconnected می‌کند؛ mutationها mirror می‌شوند؛ failure با `STORAGE_REQUIRED` کنترل می‌شود.
 - **اثر باقی‌مانده:** فایل JSON برای چند process، lock توزیع‌شده و scale افقی کافی نیست.
@@ -257,6 +257,14 @@
 5. `ISS-007`: ظرفیت و assetهای رسمی — تست ظرفیت انجام شد؛ source of truth UI باز است.
 6. `ISS-005`, `ISS-010`: persistence و قرارداد undo — باز.
 7. `ISS-011` تا `ISS-015`: shared contract، formatter، branch protection و readiness/liveness — بخشی انجام شد؛ موارد علامت‌گذاری‌شده باز هستند.
+
+## وضعیت deploy production
+
+- **آخرین deploy:** commit `98c1c68` روی `catan.saeedlavasani.ir` با Docker اجرا شد.
+- **نتیجه:** `/health`, `/health/live`, `/health/ready` و ساخت روم از دامنه‌ی واقعی موفق بودند.
+- **حفاظت sabtbrooker:** کانتینرهای sabtbrooker و `sabtbrooker-nginx` در redeploy متوقف یا بازسازی نشدند و بعد از عملیات healthy/running باقی ماندند.
+- **rollback:** snapshot در `/root/catan-redeploy-backup-20260804_191354.tar.gz` روی سرور ایجاد شد.
+- **نکته:** source deploy محلی `/opt/catan-online` هنوز باید با artifactهای Docker/Nginx همین commit sync شود تا restart آینده compose قدیمی را اجرا نکند.
 
 ## روند batch توسعه
 

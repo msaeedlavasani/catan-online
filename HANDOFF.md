@@ -7,7 +7,7 @@
 - **Client:** React 18 + Vite + Socket.io Client
 - **Server:** Node.js ESM + Express + Socket.io
 
-وضعیت فعلی برای ادامه‌ی توسعه مناسب است، اما هنوز باید به‌عنوان یک prototype/MVP ناتمام در نظر گرفته شود. build کلاینت موفق است و lint، تست‌های unit/integration، persistence فایل، CI و syntax check اضافه شده‌اند؛ با این حال پوشش کامل product flow و shared database/multi-process persistence هنوز باقی است.
+وضعیت فعلی برای ادامه‌ی توسعه مناسب است، اما هنوز باید به‌عنوان یک prototype/MVP ناتمام در نظر گرفته شود. commit `98c1c68` با Docker روی `catan.saeedlavasani.ir` redeploy شد؛ health، liveness، readiness و createRoom production موفق بودند. sabtbrooker و `sabtbrooker-nginx` در این عملیات متوقف یا بازسازی نشدند. build کلاینت، lint، تست‌های unit/integration، persistence فایل، CI و syntax check فعال‌اند؛ پوشش کامل product flow و shared database/multi-process persistence هنوز باقی است.
 
 فهرست کارهای قابل تبدیل به issue در [`ISSUES.md`](./ISSUES.md) قرار دارد.
 

@@ -2,7 +2,7 @@
 
 نسخه‌ی آنلاین و چندنفره‌ی بازی کاتان با کلاینت React/Vite و سرور Node.js/Socket.io. منطق بازی در سرور اجرا و اعتبارسنجی می‌شود و کلاینت فقط state عمومی تخته و state خصوصی بازیکن خودش را دریافت می‌کند.
 
-> وضعیت فعلی: پروژه قابل نصب و build است، اما هنوز MVP پایدار و production-ready نیست. فهرست مشکلات و برنامه‌ی رفع آن‌ها در [`HANDOFF.md`](./HANDOFF.md) و [`ISSUES.md`](./ISSUES.md) قرار دارد.
+> وضعیت فعلی: نسخه‌ی `98c1c68` با Docker روی `catan.saeedlavasani.ir` با موفقیت redeploy و health-check شده است. پروژه هنوز MVP کامل و production-ready نهایی نیست؛ فهرست مشکلات و برنامه‌ی رفع آن‌ها در [`HANDOFF.md`](./HANDOFF.md) و [`ISSUES.md`](./ISSUES.md) قرار دارد.
 
 ## وضعیت فعلی
 

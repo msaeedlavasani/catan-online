@@ -1,0 +1,40 @@
+services:
+  catan-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: catan-backend
+    restart: always
+    expose:
+      - "4000"
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      CLIENT_ORIGIN: https://catan.saeedlavasani.ir
+      ROOM_TTL_MS: "300000"
+      STORAGE_PATH: /app/server/data/rooms
+      STORAGE_REQUIRED: "true"
+      READINESS_MEMORY_THRESHOLD: "0.9"
+    volumes:
+      - catan-data:/app/server/data
+    networks:
+      - catan-net
+
+  catan-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: catan-frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - catan-backend
+    networks:
+      - catan-net
+
+volumes:
+  catan-data:
+
+networks:
+  catan-net:
