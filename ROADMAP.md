@@ -7,7 +7,7 @@
 - [x] منطق اولیه‌ی بازی در server-authoritative engine
 - [x] مدیریت اولیه‌ی روم‌ها در سرور
 - [x] مستندات پایه، `.gitignore` و env example
-- [ ] lockfileهای معتبر و قابل استفاده در clone تازه
+- [x] lockfileهای معتبر و قابل استفاده در clone تازه
 - [x] تست‌های پایه و quality gate اولیه
 - [x] workflow CI برای lint/test/build/syntax
 

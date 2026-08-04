@@ -125,7 +125,7 @@ node --check src/game/engine.js
 - constants بین client و server تکرار شده‌اند.
 - متن‌ها و labelها در دو زبان/منبع جدا قرار دارند.
 - ESLint، تست‌های پایه و CI فعال هستند؛ formatter و پوشش کامل قوانین هنوز باقی است.
-- lockfileهای package باید بخشی از baseline قابل‌اعتماد ریپو شوند.
+- lockfileهای client/server tracked هستند؛ audit و به‌روزرسانی دوره‌ای dependencyها همچنان لازم است.
 
 ## ۷. ترتیب پیشنهادی برای ادامه‌ی کار
 

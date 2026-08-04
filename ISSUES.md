@@ -59,14 +59,15 @@
 ### ISS-004 — تولید و commit کردن lockfileهای معتبر
 
 - **شدت:** P1 / بازتولیدپذیری
-- **محل:** `client/package-lock.json`, `server/package-lock.json`, `package-lock.json` ریشه
-- **مشکل:** lockfileهای client/server در اجرای محلی تولید شده‌اند اما در وضعیت فعلی git untracked هستند و lockfile ریشه خالی و بی‌مصرف است.
-- **اثر:** clone تازه با `npm ci` قابل اتکا نیست و نسخه‌ی وابستگی‌ها drift می‌کند.
-- **راه‌حل پیشنهادی:** lockfile معتبر هر package را commit کنید؛ lockfile ریشه را فقط در صورت تبدیل پروژه به npm workspace نگه دارید.
+- **وضعیت:** بخش lockfile رفع شده است؛ بررسی drift وابستگی‌ها همچنان باید در CI ادامه داشته باشد.
+- **محل:** `client/package-lock.json`, `server/package-lock.json`
+- **وضعیت فعلی:** lockfileهای client و server tracked و معتبر هستند؛ lockfile ریشه حذف شده چون پروژه workspace ریشه نیست.
+- **اثر باقی‌مانده:** نسخه‌های dependency با وجود lock شدن باید به‌صورت دوره‌ای audit و به‌روزرسانی شوند.
+- **راه‌حل اعمال‌شده:** `npm ci` برای هر package در CI و بررسی‌های محلی اجرا می‌شود.
 - **معیار پذیرش:**
-  - [ ] `npm ci` در client و server از clone تازه موفق باشد.
-  - [ ] lockfile ریشه یا حذف شده باشد یا workspace واقعی را توصیف کند.
-  - [ ] نصب بدون تغییر ناخواسته‌ی lockfile تمام شود.
+  - [x] `npm ci` در client و server از clone تازه موفق باشد.
+  - [x] lockfile ریشه حذف شده باشد.
+  - [x] نصب بدون تغییر ناخواسته‌ی lockfile تمام شود.
 
 ### ISS-005 — اصلاح مدل نگهداری روم‌ها و persistence
 
