@@ -20,6 +20,7 @@ test("rejects missing and malformed socket payloads", () => {
   assert.equal(validatePayload("buildRoad", { edgeId: "0" }).ok, false);
   assert.equal(validatePayload("bankTrade", { give: "wood", want: "wood" }).ok, false);
   assert.equal(validatePayload("resolveYearOfPlenty", { picks: ["wood"] }).ok, false);
+  assert.deepEqual(validatePayload("buyDevCard", {}), { ok: true, payload: {} });
 });
 
 test("normalizes valid room and resource payloads", () => {

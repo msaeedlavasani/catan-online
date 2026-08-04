@@ -103,7 +103,7 @@ node --check src/game/core.js
 node --check src/game/engine.js
 ```
 
-در وضعیت فعلی `npm test` و `npm run lint` در هر دو package تعریف شده‌اند. تست‌های client، CORS و validation اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها را قبل از رسیدن به engine بررسی می‌کند و handlerها خطا را با ack استاندارد برمی‌گردانند. پوشش کامل قوانین بازی همچنان با `ISS-006` دنبال می‌شود.
+در وضعیت فعلی `npm test` و `npm run lint` در هر دو package تعریف شده‌اند. تست‌های client، CORS و validation اجرا می‌شوند؛ validation مرکزی در `server/src/validation.js` ورودی‌های eventها، از جمله eventهای بدون payload مثل `buyDevCard`، را قبل از رسیدن به engine بررسی می‌کند و handlerها خطا را با ack استاندارد برمی‌گردانند. پوشش کامل قوانین بازی همچنان با `ISS-006` دنبال می‌شود.
 
 ## ۶. ریسک‌های مهم
 

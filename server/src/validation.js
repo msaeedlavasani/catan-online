@@ -66,7 +66,7 @@ export function validatePayload(event, payload) {
   const data = payload ?? {};
   let error;
 
-  if (["startGame", "rollDice", "endTurn", "undoTurnActions"].includes(event)) return ok({});
+  if (["startGame", "rollDice", "buyDevCard", "endTurn", "undoTurnActions"].includes(event)) return ok({});
 
   if (["createRoom", "joinRoom"].includes(event)) {
     error = requireNonEmptyString(data.playerName, "playerName", 16);

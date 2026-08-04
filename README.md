@@ -101,7 +101,7 @@ npm run dev       # توسعه با nodemon
 npm start         # اجرای مستقیم
 ```
 
-scriptهای `lint` و `test` در هر دو package فعال هستند. ورودی‌های Socket.io با validation مرکزی در `server/src/validation.js` بررسی می‌شوند و تست‌های منفی آن در `server/test/validation.test.js` قرار دارند. پوشش کامل قوانین engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
+scriptهای `lint` و `test` در هر دو package فعال هستند. ورودی‌های Socket.io با validation مرکزی در `server/src/validation.js` بررسی می‌شوند؛ اکشن‌های بدون payload مثل `buyDevCard` نیز در این قرارداد ثبت شده‌اند. تست‌های منفی و contract آن در `server/test/validation.test.js` قرار دارند. پوشش کامل قوانین engine هنوز در [`ISSUES.md`](./ISSUES.md) دنبال می‌شود.
 
 ## معماری کوتاه
 

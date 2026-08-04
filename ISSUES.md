@@ -33,7 +33,7 @@
 - **محل:** `server/src/validation.js`, `server/src/index.js`, `server/src/game/engine.js`
 - **راه‌حل اعمال‌شده:** payloadهای create/join/rejoin، room state، board ids، منابع، trade، کارت توسعه و picks قبل از engine validate می‌شوند. handlerها خطای `{ ok: false, error }` برمی‌گردانند و اجرای engine را با try/catch ایزوله می‌کنند.
 - **guardهای engine:** player ناشناخته و vertex/edge/tile خارج از محدوده خطای کنترل‌شده می‌دهند؛ لغو trade فقط برای proposer مجاز است.
-- **تست:** `server/test/validation.test.js` payload ناقص، type غلط، ID خارج از محدوده، player ناشناخته و مالکیت trade را بررسی می‌کند.
+- **تست:** `server/test/validation.test.js` payload ناقص، type غلط، event بدون payload مثل `buyDevCard`، ID خارج از محدوده، player ناشناخته و مالکیت trade را بررسی می‌کند.
 - **معیار پذیرش:**
   - [x] handler عمومی با payload نامعتبر exception قابل‌مشاهده به client نمی‌دهد.
   - [x] شناسه‌های tile/vertex/edge قبل از دسترسی به آرایه validate شوند.
